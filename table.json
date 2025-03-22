@@ -1,1 +1,1 @@
-[]
+[{"completed": true, "title": "hello world", "comment": "blablablalba", "description": "", "resources": ["link one", "link two"]}, {"completed": false, "title": "bye world", "comment": "some comment lol", "description": "", "resources": ["link one", "link 2", "link 3", "link 4", "link 5"]}, {"completed": false, "title": "New text", "comment": "", "description": "", "resources": []}]
