@@ -26,8 +26,7 @@ TSK_KEY_ID = "id"
 tasks = []
 
 
-def difference(i, indent, section_title):
-    return (indent - 2 - len(f"{section_title[i]}"))
+
     
 class Task:
     ## While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
@@ -66,9 +65,7 @@ class Task:
             self._resources = resources
             self._status = status
             self._title = title or self.generate_task_title()
-
-    # def format_attributes()
-
+            
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
 
@@ -106,61 +103,71 @@ class Task:
 
         return self._taskd 
         
-    def _print_task_header(self):
-        ''' Prints the task header row. Consists of task.title and task.status. ''' 
+    def __str__(self, ):
+        return self._get_header_str()
 
-        title_str = self._title
-        status_symbol = COMPLETED_SYMBOL if self._status else UNCOMPLETED_SYMBOL
+    def _get_header_str(self):
+        ''' Format the task header row. Consists of task.title and task.status. ''' 
 
-        title_length = len(title_str)
-        if title_length > MAX_TITLE_LENGTH:
-            title_str = title_str[:MAX_TITLE_LENGTH] + '...'
+        status = COMPLETED_SYMBOL if self._status else UNCOMPLETED_SYMBOL
+        
+        title = self._title
+        if len(title) > MAX_TITLE_LENGTH:
+            title = title[:MAX_TITLE_LENGTH] + '...'
 
-        print(f"|{status_symbol}|\t{title_str} (ID: {self._id})")
+        return f"|{status}|\t{title} (ID: {self._id})"
 
-    def print_task(self):
-        self._print_task_header()   
+    def _get_pad(self, i, indent, section_title):
+        return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
 
-        if self._comment or self._resources:
+    def summarize(self):
+        t = self._get_header_str() + '\n'
+
+        section_title = [
+            "Comment" if self._comment else "", 
+            "Description" if self._description else "", 
+            "Resources" if self._resources else "",
+        ]
+        
+        if any(title for title in section_title): 
             separator = '_' * 18
-            print(f"\t{separator}")
-            section_title = ["", ""]
+            t += f"\t{separator}\n"
 
-            if self._comment:
-                section_title[0] = "Comment"
-
-            if self._resources:
-                section_title[1] = "Resources"
-
-            indent = max(len(title) for title in section_title) + 2  # + 2 represent ': '
+            indentation = max(len(title) for title in section_title) + 2  # + 2 represent ': '
             
-            if self._comment:
-                diff = difference(0, indent, section_title)
-                print(f"\t{section_title[0]}: {' ' * diff}{self._comment}")
+            if section_title[0]:
+                pad = self._get_pad(0, indentation, section_title)
+                t += f"\t{section_title[0]}: {' ' * pad}{self._comment}\n"
 
-            if self._resources:
+            if section_title[2]:
                 n = len(self._resources)
-                diff = difference(1, indent, section_title)
+                pad = self._get_pad(2, indentation, section_title)
 
                 for i in range(0, MAX_RESOURCES_TO_DISPLAY):
                     if i >= n:
                         break
 
-                    print("\t", end='')
+                    t += '\t'
                     if i == 0:
-                        print(f"{section_title[1]}: {' ' * diff}", end='')
+                        t += f"{section_title[2]}: {' ' * pad}"
                     else:
-                        print(f"{' ' * indent}", end='')
+                        t += f"{' ' * indentation}"
 
-                    print(f"{self._resources[i]}")
+                    t += f"{self._resources[i]}\n"
 
                 if n > MAX_RESOURCES_TO_DISPLAY:
-                    print(f"\t{' ' * indent}{n - MAX_RESOURCES_TO_DISPLAY} more resources.")
+                    t += f"\t{' ' * indentation}{n - MAX_RESOURCES_TO_DISPLAY} more resources.\n"
+        
+        return t
 
-def display_table():
+def display_table(detailed=True):
     for i, task in enumerate(table):
         print(f"{i+1}: ", end='')
-        task.print_task()        
+
+        if detailed:
+            print(task.summarize(), end='')   
+        else:
+            print(task)
 
 def parse_args(argv):
     # not implemented
