@@ -8,13 +8,21 @@ MAX_RESOURCES_TO_DISPLAY = 2
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
 
-ADD = "add"
-RM = "remove"
-CLEAR = "clear"
-EDIT = "edit"
-LIST = "list"
+FN_ADD = "add"
+FN_REMOVE = "remove"
+FN_CLEAR = "clear"
+FN_EDIT = "edit"
+FN_LIST = "list"
+FN_STASH = "stash"
 
-FUNCTIONS = [ADD, RM, CLEAR, EDIT, LIST]
+FUNCTIONS = {
+    FN_ADD: {}, # option: n_args || option:more_options
+    FN_REMOVE: {}, 
+    FN_CLEAR: {}, 
+    FN_EDIT: [], 
+    FN_LIST: [], 
+    FN_STASH: []
+}
 
 TSK_KEY_STATUS = "completed"
 TSK_KEY_TITLE = "title"
@@ -24,9 +32,6 @@ TSK_KEY_RESOURCES = "resources"
 TSK_KEY_ID = "id"
 
 tasks = []
-
-
-
     
 class Task:
     ## While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
@@ -65,7 +70,7 @@ class Task:
             self._resources = resources
             self._status = status
             self._title = title or self.generate_task_title()
-            
+
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
 
@@ -169,9 +174,52 @@ def display_table(detailed=True):
         else:
             print(task)
 
-def parse_args(argv):
-    # not implemented
-    return argv[0]
+def parse_args(args):
+    if len(args) != len(set(args)):
+        print("Duplicate arguments provided.")
+        sys.exit()
+    
+    arg = args.pop(0)
+
+    if arg in FUNCTIONS.keys(): 
+        fn = arg
+    else:
+        fn = FN_ADD
+        task_title = arg
+
+    options = []
+    for option in FUNCTIONS[fn]:
+        options[option] = None
+
+    while args:
+        arg = args.pop(0)
+
+        if arg in FUNCTIONS.keys():
+            print(f"Already provided function: {fn}")
+            sys.exit()
+
+        if arg.startswith('-'): 
+            if arg not in FUNCTIONS[fn]:
+                print("Unrecognised option '{arg}' for function '{mode}'.")    
+                sys.exit()
+
+            option = arg
+
+            if FUNCTIONS[option]: # option takes arguments
+                if not args:
+                    print(f"Option '{option}' requires at least one argument.")
+                    sys.exit()
+
+                options[option] = [args.pop(0)] # list of arguments for option
+                while args:
+                    if any(args[0] == key or args[0] in FUNCTIONS[key] for key in FUNCTIONS.keys()):
+                        break ## If next arg is another keyword it is not a valid arg for option
+                    
+                    options[option].append(args.pop(0))
+            else:
+                options[option] = True
+        else:
+            pass # positional based on mode
 
 if __name__ == '__main__':
     table = []
@@ -187,8 +235,7 @@ if __name__ == '__main__':
         display_table()
         sys.exit()
     
-
-    title = parse_args(argv)
+    title = parse_args(argv, argc)
     task = Task(title=title)
     
     tasks.append(task)
