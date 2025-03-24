@@ -1,35 +1,8 @@
 import sys
 import json
 
-MAX_TITLE_LENGTH = 38
-
-MAX_RESOURCES_TO_DISPLAY = 2
-
-COMPLETED_SYMBOL = 'x'
-UNCOMPLETED_SYMBOL = '-'
-
-FN_ADD = "add"
-FN_REMOVE = "remove"
-FN_CLEAR = "clear"
-FN_EDIT = "edit"
-FN_LIST = "list"
-FN_STASH = "stash"
-
-FUNCTIONS = {
-    FN_ADD: {}, # option: n_args || option:more_options
-    FN_REMOVE: {}, 
-    FN_CLEAR: {}, 
-    FN_EDIT: {}, 
-    FN_LIST: {}, 
-    FN_STASH: {}
-}
-
-TSK_KEY_STATUS = "completed"
-TSK_KEY_TITLE = "title"
-TSK_KEY_COMMENT = "comment"
-TSK_KEY_DESCRIPTION = "description"
-TSK_KEY_RESOURCES = "resources"
-TSK_KEY_ID = "id"
+# Local imports
+from globals import * 
 
 tasks = []
     
@@ -174,24 +147,31 @@ def display_table(detailed=True):
         else:
             print(task)
 
-def parse_args(args):
-    if len(args) != len(set(args)):
-        print("Duplicate arguments provided.")
+def is_keyword(x):
+    if x in OPTION_ALIASES.keys():
+        return True
+    if x in FUNCTIONS.keys():
+        return True
+    return False
+
+def parse_opt_args(args, options, opt):
+    while args and not is_keyword(args[0]):                   
+        if isinstance(options[opt], str):
+            options[opt] = args.pop(0)
+            return
+
+        options[opt].append(args.pop(0))
+
+    if not options[opt]:
+        print(f"Option '{opt}' requires at lest one argument.")
         sys.exit()
-    
-    arg = args.pop(0)
 
-    if arg in FUNCTIONS.keys(): 
-        fn = arg
-    else:
-        fn = FN_ADD
-        task_title = arg
+def parse_args(args):    
+    fn = args.pop(0)
+    if fn not in FUNCTIONS.keys(): 
+        print(f"Not a valid function: {arg}")
 
-    # Move into main scope 
-    options = []
-    for option in FUNCTIONS[fn]:
-        options[option] = False
-    # options[option] can contain either list or bool. this forces check isattribute(list) which is a bit messy?
+    options = FUNCTIONS[fn].copy()
 
     while args:
         arg = args.pop(0)
@@ -201,49 +181,29 @@ def parse_args(args):
             sys.exit()
 
         if arg.startswith('-'): 
-            option = arg
-
-            if option not in FUNCTIONS[fn]:
-                print("Unrecognised option '{option}' for function '{mode}'.")    
+            try:
+                opt = OPTION_ALIASES[arg]
+            except KeyError:
+                print(f"Unrecognised option '{arg}' for function '{fn}'.")    
                 sys.exit()
 
-
-            if FUNCTIONS[fn][option]: # option takes arguments
-                if not args:
-                    print(f"Option '{option}' requires at least one argument.")
-                    sys.exit()
-
-                options[option] = [] # list of arguments for option # Should probably init outside of this
-                while args:
-                    if any(args[0] == fn or args[0] in FUNCTIONS[fn] for fn in FUNCTIONS.keys()): ## If next arg is another keyword it is not a valid arg for option
-                        if not options[option]: ## if no args have been provided for an option that requires args then exit
-                            print(f"Option '{option}' requires at lest one argument.")
-                            sys.exit()
-                        break 
-                    
-                    options[option].append(args.pop(0)) # pop happens after check so we avoid having to reappend another option for example
+            if isinstance(options[opt], bool):
+                options[opt] = True
             else:
-                options[option] = True
+                parse_opt_args(args, options, opt)
         else:
-            pass # positional based on mode
+            pass # positional based on current mode
 
-if __name__ == '__main__':
-    table = []
-    with open("table.json", "r") as table_file:
-        l = json.loads(table_file.read())
-        for d in l:
-            table.append(Task(taskd=d))
+    return fn, options.copy()
 
-    argv = sys.argv[1:]
-    argc = len(argv)
+def main(fn, options):
+    # calls appropriate function
+    if fn == FN_ADD:
+        add(options)
 
-    if (argc == 0):
-        display_table()
-        sys.exit()
-    
-    title = parse_args(argv, argc)
-    task = Task(title=title)
-    
+def add(options):
+    task = Task(title=options[OPT_TITLE])
+
     tasks.append(task)
 
     for task in tasks:
@@ -257,3 +217,24 @@ if __name__ == '__main__':
 
     with open("table.json", "w") as table_file:
         table_file.write(table_json)
+
+if __name__ == '__main__':
+    table = TABLE.copy()
+
+    with open("table.json", "r") as table_file:
+        loaded_table = json.loads(table_file.read())
+        table[TBL_KEY_NAME] = loaded_table[TBL_KEY_NAME]
+        for d in loaded_table[TBL_KEY_CONTENTS]:
+            table[TBL_KEY_CONTENTS].append(Task(taskd=d))
+
+    args = sys.argv[1:]
+
+    if len(args) == 0:
+        display_table()
+        sys.exit()
+    
+    fn, options = parse_args(args)
+
+    print(fn, options)
+
+    main(fn, options)
