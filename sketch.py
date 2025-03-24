@@ -19,9 +19,9 @@ FUNCTIONS = {
     FN_ADD: {}, # option: n_args || option:more_options
     FN_REMOVE: {}, 
     FN_CLEAR: {}, 
-    FN_EDIT: [], 
-    FN_LIST: [], 
-    FN_STASH: []
+    FN_EDIT: {}, 
+    FN_LIST: {}, 
+    FN_STASH: {}
 }
 
 TSK_KEY_STATUS = "completed"
@@ -187,9 +187,11 @@ def parse_args(args):
         fn = FN_ADD
         task_title = arg
 
+    # Move into main scope 
     options = []
     for option in FUNCTIONS[fn]:
-        options[option] = None
+        options[option] = False
+    # options[option] can contain either list or bool. this forces check isattribute(list) which is a bit messy?
 
     while args:
         arg = args.pop(0)
@@ -199,23 +201,27 @@ def parse_args(args):
             sys.exit()
 
         if arg.startswith('-'): 
-            if arg not in FUNCTIONS[fn]:
-                print("Unrecognised option '{arg}' for function '{mode}'.")    
-                sys.exit()
-
             option = arg
 
-            if FUNCTIONS[option]: # option takes arguments
+            if option not in FUNCTIONS[fn]:
+                print("Unrecognised option '{option}' for function '{mode}'.")    
+                sys.exit()
+
+
+            if FUNCTIONS[fn][option]: # option takes arguments
                 if not args:
                     print(f"Option '{option}' requires at least one argument.")
                     sys.exit()
 
-                options[option] = [args.pop(0)] # list of arguments for option
+                options[option] = [] # list of arguments for option # Should probably init outside of this
                 while args:
-                    if any(args[0] == key or args[0] in FUNCTIONS[key] for key in FUNCTIONS.keys()):
-                        break ## If next arg is another keyword it is not a valid arg for option
+                    if any(args[0] == fn or args[0] in FUNCTIONS[fn] for fn in FUNCTIONS.keys()): ## If next arg is another keyword it is not a valid arg for option
+                        if not options[option]: ## if no args have been provided for an option that requires args then exit
+                            print(f"Option '{option}' requires at lest one argument.")
+                            sys.exit()
+                        break 
                     
-                    options[option].append(args.pop(0))
+                    options[option].append(args.pop(0)) # pop happens after check so we avoid having to reappend another option for example
             else:
                 options[option] = True
         else:
