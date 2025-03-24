@@ -2,11 +2,15 @@
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
 
+# OPTION KEYWORDS
 OPT_TITLE = "title"
+OPT_RESOURCES = "resources"
 
 OPTION_ALIASES = {
-    "t": OPT_TITLE,
-    "title": OPT_TITLE
+    "-t": OPT_TITLE,
+    "title": OPT_TITLE,
+    "-r": OPT_RESOURCES,
+    "resources": OPT_RESOURCES
 }
 
 # FUNCTION KEYWORDS
@@ -19,7 +23,8 @@ FN_STASH = "stash"
 
 FUNCTIONS = {
     FN_ADD: {
-        OPT_TITLE: ""
+        OPT_TITLE: "",
+        OPT_RESOURCES: []
     },
     FN_REMOVE: {}, 
     FN_CLEAR: {}, 
@@ -43,3 +48,6 @@ TBL_KEY_CONTENTS = "contents"
 # CONFIGURABLES
 MAX_TITLE_LENGTH = 38
 MAX_RESOURCES_TO_DISPLAY = 2
+
+## Base table
+TABLE = {TBL_KEY_NAME: "", TBL_KEY_CONTENTS: []}
