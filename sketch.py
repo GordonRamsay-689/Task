@@ -156,11 +156,7 @@ def display_table(detailed=True):
             print(task)
 
 def is_keyword(x):
-    if x in OPTION_ALIASES.keys():
-        return True
-    if x in FUNCTIONS.keys():
-        return True
-    return False
+    return x in OPTION_ALIASES.keys() or x in FUNCTIONS.keys()
 
 def parse_opt_args(args, options, opt):
     while args and not is_keyword(args[0]):                   
