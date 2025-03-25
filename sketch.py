@@ -99,6 +99,14 @@ class Task:
         return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
 
     def summarize(self):
+        # Is a hardcoded summary desireable or acceptable? Leveraging the design of the FUNCTIONS dictionary as 'parse_args()' does would be more elegant.
+        # The FUNCTIONS dictionary is designed so that altering an option is as simple as changing the type in the init dict. If in the future we want to 
+        # for example add the ability to add multiple comments, then it would basically be formatted the same way as section_title[2] (resources) is being
+        # formatted at the moment. Obviously repeating this code is dumb
+
+        # Potentially a check for type could be performed against the contents of the class variables and based on that select a formatting method (single or multiple)
+        # this would however require a way to get the correct section_title for each comment. Not sure how to do that dynamically based on the variable name, but you
+        # can probably get a string from a variable name somehow and then map in a dict or something.
         t = self._get_header_str() + '\n'
 
         section_title = [

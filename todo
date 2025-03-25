@@ -1,2 +1,3 @@
-- implement parse args
+- adapt Task.summarize() to two methods for formatting, single and multiple. Then based on type, use these methods to format.
+
 - implement a group/set/table data structure
