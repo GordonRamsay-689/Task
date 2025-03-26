@@ -1,11 +1,10 @@
 import sys
+import copy # potentially replace with just manual copying of the dict, if this has any impact at all on speed id.
 import json
 
 # Local imports
 from globals import * 
 
-tasks = []
-    
 class Task:
     ## While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
     ## When updating a task only the object attributes are updated, until you choose to either write the task 
@@ -37,6 +36,7 @@ class Task:
         if taskd:
             self._load_dict(taskd)
         else:
+            # Do .copy() for lists?
             self._comment = comment
             self._description = description
             self._id = self.generate_task_id()
@@ -97,6 +97,9 @@ class Task:
 
     def _get_pad(self, i, indent, section_title):
         return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
+
+    def generate_task_id(self):
+        return 1
 
     def summarize(self):
         # Is a hardcoded summary desireable or acceptable? Leveraging the design of the FUNCTIONS dictionary as 'parse_args()' does would be more elegant.
@@ -170,12 +173,17 @@ def parse_opt_args(args, options, opt):
         print(f"Option '{opt}' requires at lest one argument.")
         sys.exit()
 
+def init_options(fn):
+    return copy.deepcopy(FUNCTIONS[fn])
+
 def parse_args(args):    
+    stack = []
+
     fn = args.pop(0)
     if fn not in FUNCTIONS.keys(): 
         print(f"Not a valid function: {arg}")
 
-    options = FUNCTIONS[fn].copy()
+    options = init_options(fn)
 
     while args:
         arg = args.pop(0)
@@ -191,6 +199,11 @@ def parse_args(args):
                 print(f"Unrecognised option '{arg}' for function '{fn}'.")    
                 sys.exit()
 
+            # Specifies a new task. ex: -t name_for_task0 -r resource_for_task0 -t name_for_task1 -r resource_for_task1
+            if opt == OPT_TITLE and options[OPT_TITLE]:
+                stack.append(options)
+                options = init_options(fn)
+
             if isinstance(options[opt], bool):
                 options[opt] = True
             else:
@@ -198,7 +211,9 @@ def parse_args(args):
         else:
             pass # positional based on current mode
 
-    return fn, options.copy()
+    stack.append(options)
+
+    return fn, stack
 
 def main(fn, options):
     # calls appropriate function
@@ -206,24 +221,31 @@ def main(fn, options):
         add(options)
 
 def add(options):
-    task = Task(title=options[OPT_TITLE])
+    task = Task(title=options[OPT_TITLE], resources=options[OPT_RESOURCES]) # Add cleaner arg parsing and rest of args.
 
+    tasks = []
     tasks.append(task)
 
     for task in tasks:
-        if len(table) >= 10:
+        if len(table[TBL_KEY_CONTENTS]) >= 10:
             print("Table is full. Unable to add new task.")
-            break
+            sys.exit() # give some indication of what failed to write
 
-        table.append(task.write_dict())
+        table[TBL_KEY_CONTENTS].append(task)
 
-    table_json = json.dumps(table, ensure_ascii=False)
+    ## Move to function write tasks
+    table_to_write = copy.deepcopy(TABLE)
+    for task in table[TBL_KEY_CONTENTS]:
+        table_to_write[TBL_KEY_CONTENTS].append(task.write_dict())
+
+    table_json = json.dumps(table_to_write, ensure_ascii=False)
 
     with open("table.json", "w") as table_file:
         table_file.write(table_json)
+    ## Move to function write tasks
 
 if __name__ == '__main__':
-    table = TABLE.copy()
+    table = copy.deepcopy(TABLE)
 
     with open("table.json", "r") as table_file:
         loaded_table = json.loads(table_file.read())
@@ -237,8 +259,7 @@ if __name__ == '__main__':
         display_table()
         sys.exit()
     
-    fn, options = parse_args(args)
+    fn, stack = parse_args(args)
 
-    print(fn, options)
-
-    main(fn, options)
+    for options in stack:
+        main(fn, options)
