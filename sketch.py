@@ -182,7 +182,8 @@ def parse_args(args):
     fn = args.pop(0)
     if fn not in FUNCTIONS.keys(): 
         print(f"Not a valid function: {fn}")
-
+        sys.exit()
+        
     options = init_options(fn)
 
     while args:
