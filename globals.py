@@ -2,9 +2,10 @@
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
 
-# OPTION KEYWORDS
+# OPTION KEYWORDS (CONSIDER CLEARER NAMING PRACTICE)
 OPT_TITLE = "title"
 OPT_RESOURCES = "resources"
+OPT_DETAILED = "detailed"
 
 OPTION_ALIASES = {
     "-t": OPT_TITLE,
@@ -29,7 +30,9 @@ FUNCTIONS = {
     FN_REMOVE: {}, 
     FN_CLEAR: {}, 
     FN_EDIT: {}, 
-    FN_LIST: {}, 
+    FN_LIST: {
+        OPT_DETAILED: True
+    }, 
     FN_STASH: {}
 }
 

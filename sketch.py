@@ -149,11 +149,11 @@ class Task:
         
         return t
 
-def display_table(detailed=True):
-    for i, task in enumerate(table):
+def display_table(options):
+    for i, task in enumerate(table[TBL_KEY_CONTENTS]):
         print(f"{i+1}: ", end='')
 
-        if detailed:
+        if options[OPT_DETAILED]:
             print(task.summarize(), end='')   
         else:
             print(task)
@@ -178,12 +178,15 @@ def init_options(fn):
 
 def parse_args(args):    
     stack = []
-
-    fn = args.pop(0)
-    if fn not in FUNCTIONS.keys(): 
-        print(f"Not a valid function: {fn}")
-        sys.exit()
-        
+    
+    if len(args) == 0:
+        fn = FN_LIST
+    else:
+        fn = args.pop(0)
+        if fn not in FUNCTIONS.keys(): 
+            print(f"Not a valid function: {fn}")
+            sys.exit()
+            
     options = init_options(fn)
 
     while args:
@@ -220,6 +223,8 @@ def main(fn, options):
     # calls appropriate function
     if fn == FN_ADD:
         add(options)
+    elif fn == FN_LIST:
+        display_table(options)
 
 def add(options):
     task = Task(title=options[OPT_TITLE], resources=options[OPT_RESOURCES]) # Add cleaner arg parsing and rest of args.
@@ -245,21 +250,25 @@ def add(options):
         table_file.write(table_json)
     ## Move to function write tasks
 
+def import_table(filename, local):
+    with open(filename, "r") as f:
+        imported = json.loads(f.read())
+
+        local[TBL_KEY_NAME] = imported[TBL_KEY_NAME]
+
+        for d in imported[TBL_KEY_CONTENTS]:
+            local[TBL_KEY_CONTENTS].append(Task(taskd=d))
+
 if __name__ == '__main__':
     table = copy.deepcopy(TABLE)
 
-    with open("table.json", "r") as table_file:
-        loaded_table = json.loads(table_file.read())
-        table[TBL_KEY_NAME] = loaded_table[TBL_KEY_NAME]
-        for d in loaded_table[TBL_KEY_CONTENTS]:
-            table[TBL_KEY_CONTENTS].append(Task(taskd=d))
+    try:
+        import_table(filename="table.json", local=table)
+    except (KeyError, FileNotFoundError):
+        print("File is not a valid table.")
+        sys.exit()
 
     args = sys.argv[1:]
-
-    if len(args) == 0:
-        display_table()
-        sys.exit()
-    
     fn, stack = parse_args(args)
 
     for options in stack:
