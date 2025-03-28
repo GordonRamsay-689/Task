@@ -151,7 +151,7 @@ class Task:
 
 def display_table(options):
     for i, task in enumerate(table[TBL_KEY_CONTENTS]):
-        print(f"{i+1}: ", end='')
+        print(f"{i+1}: ", end='') # Add dynamic whitespace calculation based on strlen of i.
 
         if options[OPT_DETAILED]:
             print(task.summarize(), end='')   
