@@ -162,12 +162,17 @@ def is_keyword(x):
     return x in OPTION_ALIASES.keys() or x in FUNCTIONS.keys()
 
 def parse_opt_args(args, options, opt):
-    while args and not is_keyword(args[0]):                   
+    while args and not is_keyword(args[0]):  
+        arg = args.pop(0)
+        if arg.startswith("-"):
+            print("Cannot provide an option as an argument to another option.")
+            sys.exit()        
+
         if isinstance(options[opt], str):
-            options[opt] = args.pop(0)
+            options[opt] = arg
             return
 
-        options[opt].append(args.pop(0))
+        options[opt].append(arg)
 
     if not options[opt]:
         print(f"Option '{opt}' requires at lest one argument.")
@@ -196,12 +201,8 @@ def parse_args(args):
             print(f"Already provided function: {fn}")
             sys.exit()
 
-        if arg.startswith('-'): 
-            try:
-                opt = OPTION_ALIASES[arg]
-            except KeyError:
-                print(f"Unrecognised option '{arg}' for function '{fn}'.")    
-                sys.exit()
+        if arg in OPTION_ALIASES.keys():
+            opt = OPTION_ALIASES[arg]
 
             # Specifies a new task. ex: -t name_for_task0 -r resource_for_task0 -t name_for_task1 -r resource_for_task1
             if opt == OPT_TITLE and options[OPT_TITLE]:
@@ -212,12 +213,15 @@ def parse_args(args):
                 options[opt] = True
             else:
                 parse_opt_args(args, options, opt)
+        elif arg.startswith('-'): # everything starting with - is an option but all options do not start with -
+            print(f"Invalid option '{arg}' for function '{fn}'.")
+            sys.exit()
         else: # Positionals based on current function.
             if fn == FN_ADD:
                 if options[OPT_TITLE]:
                     print("USAGE: ")
                     sys.exit()
-                
+
                 options[OPT_TITLE] = arg
                 continue;
 
