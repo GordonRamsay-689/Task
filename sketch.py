@@ -220,7 +220,6 @@ def parse_args(args):
     return fn, stack
 
 def main(fn, options):
-    # calls appropriate function
     if fn == FN_ADD:
         add(options)
     elif fn == FN_LIST:
@@ -234,8 +233,8 @@ def add(options):
 
     for task in tasks:
         if len(table[TBL_KEY_CONTENTS]) >= 10:
-            print("Table is full. Unable to add new task.")
-            sys.exit() # give some indication of what failed to write
+            print("Table is full. Unable to add new task.") # give some indication of what failed to write
+            sys.exit()
 
         table[TBL_KEY_CONTENTS].append(task)
 
