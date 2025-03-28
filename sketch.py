@@ -212,8 +212,14 @@ def parse_args(args):
                 options[opt] = True
             else:
                 parse_opt_args(args, options, opt)
-        else:
-            pass # positional based on current mode
+        else: # Positionals based on current function.
+            if fn == FN_ADD:
+                if options[OPT_TITLE]:
+                    print("USAGE: ")
+                    sys.exit()
+                
+                options[OPT_TITLE] = arg
+                continue;
 
     stack.append(options)
 
