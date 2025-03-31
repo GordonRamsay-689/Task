@@ -9,14 +9,14 @@ OPT_DETAILED = "detailed"
 
 OPTION_ALIASES = {
     "-t": OPT_TITLE,
-    "title": OPT_TITLE,
+    "-title": OPT_TITLE,
     "-r": OPT_RESOURCES,
-    "resources": OPT_RESOURCES
+    "-resources": OPT_RESOURCES
 }
 
 # FUNCTION KEYWORDS
 FN_ADD = "add"
-FN_REMOVE = "remove"
+FN_REMOVE = "rm"
 FN_CLEAR = "clear"
 FN_EDIT = "edit"
 FN_LIST = "list"

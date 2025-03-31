@@ -163,10 +163,7 @@ def is_keyword(x):
 
 def parse_opt_args(args, options, opt):
     while args and not is_keyword(args[0]):  
-        arg = args.pop(0)
-        if arg.startswith("-"):
-            print("Cannot provide an option as an argument to another option.")
-            sys.exit()        
+        arg = args.pop(0)       
 
         if isinstance(options[opt], str):
             options[opt] = arg
@@ -175,8 +172,13 @@ def parse_opt_args(args, options, opt):
         options[opt].append(arg)
 
     if not options[opt]:
-        print(f"Option '{opt}' requires at lest one argument.")
-        sys.exit()
+        print(f"Failed to parse args for option: '-{opt}'")
+
+        if len(args) == 0:
+            print(f"Option '-{opt}' requires at lest one argument.")
+        elif is_keyword(args[0]):
+            print(f"Option '-{opt}' cannot take keywords as arguemnts: '{args[0]}'")
+        sys.exit() 
 
 def init_options(fn):
     return copy.deepcopy(FUNCTIONS[fn])
@@ -223,7 +225,7 @@ def parse_args(args):
                     sys.exit()
 
                 options[OPT_TITLE] = arg
-                continue;
+                continue
 
     stack.append(options)
 
