@@ -86,7 +86,7 @@ def remove(options):
             # todo: function get_int(), and function get_index()
             i = int(input("> "))
             i -= 1
-            # todo: if i valid range
+            # todo: if in valid range
         else:
             i = 0
 
