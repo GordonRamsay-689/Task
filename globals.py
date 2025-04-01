@@ -1,8 +1,8 @@
+# Configurable variables.
+MAX_TITLE_LENGTH = 38
+MAX_RESOURCES_TO_DISPLAY = 2
 
-COMPLETED_SYMBOL = 'x'
-UNCOMPLETED_SYMBOL = '-'
-
-# OPTION KEYWORDS (CONSIDER CLEARER NAMING PRACTICE)
+# Option Keywords
 OPT_TITLE = "title"
 OPT_RESOURCES = "resources"
 OPT_DETAILED = "detailed"
@@ -14,7 +14,7 @@ OPTION_ALIASES = {
     "-resources": OPT_RESOURCES
 }
 
-# FUNCTION KEYWORDS
+# Function Keywords
 FN_ADD = "add"
 FN_REMOVE = "rm"
 FN_CLEAR = "clear"
@@ -36,21 +36,19 @@ FUNCTIONS = {
     FN_STASH: {}
 }
 
-# TASK KEYS
-TSK_KEY_STATUS = "completed"
-TSK_KEY_TITLE = "title"
-TSK_KEY_COMMENT = "comment"
-TSK_KEY_DESCRIPTION = "description"
-TSK_KEY_RESOURCES = "resources"
-TSK_KEY_ID = "id"
+# Task
+TSK_STATUS = "completed"
+TSK_TITLE = "title"
+TSK_COMMENT = "comment"
+TSK_DESCRIPTION = "description"
+TSK_RESOURCES = "resources"
+TSK_ID = "id"
 
-# TABLE KEYS
-TBL_KEY_NAME = "name"
-TBL_KEY_CONTENTS = "contents"
+COMPLETED_SYMBOL = 'x'
+UNCOMPLETED_SYMBOL = '-'
 
-# CONFIGURABLES
-MAX_TITLE_LENGTH = 38
-MAX_RESOURCES_TO_DISPLAY = 2
+# Table
+TBL_NAME = "name"
+TBL_CONTENTS = "contents"
 
-## Base table
-TABLE = {TBL_KEY_NAME: "", TBL_KEY_CONTENTS: []}
+TABLE = {TBL_NAME: "", TBL_CONTENTS: []}

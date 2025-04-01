@@ -1,6 +1,4 @@
 import json
-
-# Local imports
 from globals import *
 
 table = TABLE.copy()
