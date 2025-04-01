@@ -1,7 +1,3 @@
-- proper cleanup, verification of types being used. Implementation of new TABLE structure. New, easier to manage naming scheme for Function Options (OPT_TITLE for example What happenswhen we have more than one?).
-
 - adapt Task.summarize() to two methods for formatting, single and multiple. Then based on type, use these methods to format.
 
-- move to new sketch or actual project
-
-- implement a group/set/table data structure
+- implement a group/set/table data structure # Not sure what this means.
