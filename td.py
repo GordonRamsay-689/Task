@@ -53,6 +53,10 @@ def execute(fn, options):
 
 def remove(options):
     if options[OPT_ID]:
+        if (options[OPT_ID] < 1):
+            print("Invalid ID provided.")
+            return
+
         for task in table[TBL_CONTENTS]:
             if task._id == options[OPT_ID]:
                 table[TBL_CONTENTS].remove(task)
