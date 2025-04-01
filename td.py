@@ -33,9 +33,14 @@ def display_table(options):
 
 def execute(fn, options):
     if fn == FN_ADD:
-        # todo: replace conditional with function
-        if options[OPT_TITLE] or options[OPT_RESOURCES]:
+        if any(options[key] for key in options.keys()):
             add(options)
+        else:
+            print("Nothing to add. Add requires arguments")
+            sys.exit()
+    elif fn == FN_REMOVE:
+        if any(options[key] for key in options.keys()):
+            remove(options)
         else:
             print("Nothing to add. Add requires arguments")
             sys.exit()
@@ -45,6 +50,22 @@ def execute(fn, options):
     elif fn == FN_CLEAR:
         clear()
         sys.exit()
+
+def remove(options):
+    if options[OPT_ID]:
+        for task in table[TBL_CONTENTS]:
+            if task._id == options[OPT_ID]:
+                table[TBL_CONTENTS].remove(task)
+                write_tasks()
+                return
+        print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
+    elif options[OPT_TITLE]:
+        for task in table[TBL_CONTENTS]:
+            if task._id == options[OPT_TITLE]:
+                table[TBL_CONTENTS].remove(task)
+                write_tasks()
+                return
+        print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
 
 def import_table(filename, local):
     with open(filename, "r") as f:
@@ -91,7 +112,7 @@ def parse_args(args):
             opt = OPTION_ALIASES[arg]
 
             # Denotes new task
-            if opt == OPT_TITLE and options[OPT_TITLE]:
+            if opt in [OPT_TITLE, OPT_ID] and options[opt]:
                 queue.append(options)
                 options = init_options(fn)
 
@@ -119,7 +140,14 @@ def parse_opt_args(args, options, opt):
     while args and not is_keyword(args[0]):  
         arg = args.pop(0)       
 
-        if isinstance(options[opt], str):
+        if isinstance(options[opt], int):
+            if not arg.isdigit():
+                print(f"Option '-{opt}' requires a numerical value as argument, not '{arg}'.")
+                sys.exit()
+
+            options[opt] = int(arg)
+            return
+        elif isinstance(options[opt], str):
             options[opt] = arg
             return
 

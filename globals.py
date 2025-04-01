@@ -3,15 +3,17 @@ MAX_TITLE_LENGTH = 38
 MAX_RESOURCES_TO_DISPLAY = 2
 
 # Option Keywords
-OPT_TITLE = "title"
-OPT_RESOURCES = "resources"
 OPT_DETAILED = "detailed"
+OPT_ID = "id"
+OPT_RESOURCES = "resources"
+OPT_TITLE = "title"
 
 OPTION_ALIASES = {
     "-t": OPT_TITLE,
     "-title": OPT_TITLE,
     "-r": OPT_RESOURCES,
-    "-resources": OPT_RESOURCES
+    "-resources": OPT_RESOURCES,
+    "-id": OPT_ID
 }
 
 # Function Keywords
@@ -27,7 +29,10 @@ FUNCTIONS = {
         OPT_TITLE: "",
         OPT_RESOURCES: []
     },
-    FN_REMOVE: {}, 
+    FN_REMOVE: {
+        OPT_TITLE: "",
+        OPT_ID: 0
+    }, 
     FN_CLEAR: {}, 
     FN_EDIT: {}, 
     FN_LIST: {
