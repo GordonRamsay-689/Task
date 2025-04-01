@@ -21,12 +21,16 @@ def add(options):
 def display_table(options):
     if not table[TBL_CONTENTS]:
         print("Table is empty.")
-
-    for i, task in enumerate(table[TBL_CONTENTS]):
+    else:
+        display_tasks(table[TBL_CONTENTS], 
+                      detailed=options[OPT_DETAILED])
+    
+def display_tasks(lst, detailed=False):
+    for i, task in enumerate(lst):
         index = f"{i+1}:"
         print(f"{index:4}", end='')
 
-        if options[OPT_DETAILED]:
+        if detailed:
             print(task.summarize(), end='')   
         else:
             print(task)
@@ -58,18 +62,36 @@ def remove(options):
             return
 
         for task in table[TBL_CONTENTS]:
-            if task._id == options[OPT_ID]:
+            if task._id.lower() == options[OPT_ID].lower():
                 table[TBL_CONTENTS].remove(task)
                 write_tasks()
                 return
         print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
     elif options[OPT_TITLE]:
-        for task in table[TBL_CONTENTS]:
-            if task._id == options[OPT_TITLE]:
-                table[TBL_CONTENTS].remove(task)
-                write_tasks()
-                return
-        print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
+        matches = []
+
+        for i, task in enumerate(table[TBL_CONTENTS]):
+            if task._title == options[OPT_TITLE]:
+                matches.append(task)
+
+        if not matches:
+            print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
+            return
+        
+        if len(matches) > 1:
+            print("Several tasks match provdided title. Select one to remove by index:" )
+            display_tasks(matches, detailed=True)
+            print(f"Select index in range 1-{len(matches)}.")
+
+            # todo: function get_int(), and function get_index()
+            i = int(input("> "))
+            i -= 1
+            # todo: if i valid range
+        else:
+            i = 0
+
+        table[TBL_CONTENTS].remove(matches[i])
+        write_tasks()
 
 def import_table(filename, local):
     with open(filename, "r") as f:
