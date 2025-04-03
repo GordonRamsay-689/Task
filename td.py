@@ -11,7 +11,7 @@ def add(options):
                 resources=options[OPT_RESOURCES])
 
     if len(table[TBL_CONTENTS]) >= 10:
-        print(f"Table is full. Unable to add new task: {task._title}")
+        print(f"Table is full. Unable to add new task: {task.get_title()}")
         sys.exit()
 
     table[TBL_CONTENTS].append(task)
@@ -40,13 +40,13 @@ def execute(fn, options):
         if any(options[key] for key in options.keys()):
             add(options)
         else:
-            print("Nothing to add. Add requires arguments")
+            print("Nothing to add. Function add requires arguments")
             sys.exit()
     elif fn == FN_REMOVE:
         if any(options[key] for key in options.keys()):
             remove(options)
         else:
-            print("Nothing to add. Add requires arguments")
+            print("Nothing to remove. Function remove requires arguments")
             sys.exit()
     elif fn == FN_LIST:
         display_table(options)
@@ -62,16 +62,17 @@ def remove(options):
             return
 
         for task in table[TBL_CONTENTS]:
-            if task._id.lower() == options[OPT_ID].lower():
+            if task.get_id() == options[OPT_ID]:
                 table[TBL_CONTENTS].remove(task)
                 write_tasks()
                 return
+            
         print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
     elif options[OPT_TITLE]:
         matches = []
 
         for i, task in enumerate(table[TBL_CONTENTS]):
-            if task._title == options[OPT_TITLE]:
+            if task.get_title() == options[OPT_TITLE]:
                 matches.append(task)
 
         if not matches:
