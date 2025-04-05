@@ -57,32 +57,43 @@ def execute(fn, options):
 
 def remove(options):
     if options[OPT_ID]:
-        remove_by_id(options)
+        remove_by_id(options[OPT_ID])
+    elif options[OPT_INDEX]: # # and op mode == table not all? or similar
+        remove_by_index(options[OPT_INDEX])
     elif options[OPT_TITLE]:
-        remove_by_title(options)
+        remove_by_title(options[OPT_TITLE])
 
-def remove_by_id():
-    if (options[OPT_ID] < 1): # ? examine moving to parse_args()
-        print(f"Invalid ID provided: '{options[OPT_ID]}'")
-        sys.exit()
-
+def remove_by_id(id):
     for task in table[TBL_CONTENTS]:
-        if task.get_id() == options[OPT_ID]:
+        if task.get_id() == id:
             table[TBL_CONTENTS].remove(task)
             write_tasks()
             return
         
-    print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
+    print(f"Could not locate a task on table with ID: '{id}'")
+    # ? sys.exit()
 
-def remove_by_title():
+def remove_by_index(index):
+    if index > len(table[TBL_CONTENTS]):
+        print(f"Provided index out of range: '{index}'")
+        sys.exit()
+
+    table[TBL_CONTENTS].pop(index - 1)
+    for options in queue:
+        if index < options[OPT_INDEX]: 
+            options[OPT_INDEX] -= 1
+
+    write_tasks()
+
+def remove_by_title(title):
     matches = []
 
     for i, task in enumerate(table[TBL_CONTENTS]):
-        if task.get_title() == options[OPT_TITLE]:
+        if task.get_title() == title:
             matches.append(task)
 
     if not matches:
-        print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
+        print(f"Could not locate a task on table with title: '{title}'")
         return
     
     if len(matches) > 1:
@@ -145,7 +156,7 @@ def parse_args(args):
             opt = OPTION_ALIASES[arg]
 
             # Denotes new task
-            if opt in [OPT_TITLE, OPT_ID] and options[opt]:
+            if opt in [OPT_TITLE, OPT_ID, OPT_INDEX] and options[opt]:
                 queue.append(options)
                 options = init_options(fn)
 
@@ -156,7 +167,7 @@ def parse_args(args):
         elif arg.startswith('-'):
             print(f"Invalid option '{arg}' for function '{fn}'.")
             sys.exit()
-        else: # Positionals
+        else: # todo: Positionals
             if fn == FN_ADD:
                 if options[OPT_TITLE]:
                     print("USAGE: ")
@@ -179,6 +190,11 @@ def parse_opt_args(args, options, opt):
                 sys.exit()
 
             options[opt] = int(arg)
+            
+            if options[opt] < 1:
+                print(f"Option '-{opt}' requires a positive numerical value as argument, not '{options[opt]}'.")
+                sys.exit()
+
             return
         elif isinstance(options[opt], str):
             options[opt] = arg
@@ -214,5 +230,8 @@ if __name__ == '__main__':
     
     fn, queue = parse_args(sys.argv[1:])
     
-    for options in queue:
+    ## allows for modifying provided options when for example index changes
+    ## without affecting the original set of options or this loop. (used to be for loop)
+    while queue:
+        options = queue.pop(0)
         execute(fn, options)

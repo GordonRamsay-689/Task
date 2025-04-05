@@ -5,6 +5,7 @@ MAX_RESOURCES_TO_DISPLAY = 2
 # Option Keywords
 OPT_DETAILED = "detailed"
 OPT_ID = "id"
+OPT_INDEX = "index"
 OPT_RESOURCES = "resources"
 OPT_TITLE = "title"
 
@@ -13,7 +14,8 @@ OPTION_ALIASES = {
     "-title": OPT_TITLE,
     "-r": OPT_RESOURCES,
     "-resources": OPT_RESOURCES,
-    "-id": OPT_ID
+    "-id": OPT_ID,
+    "-n": OPT_INDEX
 }
 
 # Function Keywords
@@ -31,7 +33,8 @@ FUNCTIONS = {
     },
     FN_REMOVE: {
         OPT_TITLE: "",
-        OPT_ID: 0
+        OPT_ID: 0,
+        OPT_INDEX: 0,
     }, 
     FN_CLEAR: {}, 
     FN_EDIT: {}, 
