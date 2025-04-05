@@ -57,42 +57,48 @@ def execute(fn, options):
 
 def remove(options):
     if options[OPT_ID]:
-        if (options[OPT_ID] < 1):
-            print("Invalid ID provided.")
-            return
-
-        for task in table[TBL_CONTENTS]:
-            if task.get_id() == options[OPT_ID]:
-                table[TBL_CONTENTS].remove(task)
-                write_tasks()
-                return
-            
-        print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
+        remove_by_id(options)
     elif options[OPT_TITLE]:
-        matches = []
+        remove_by_title(options)
 
-        for i, task in enumerate(table[TBL_CONTENTS]):
-            if task.get_title() == options[OPT_TITLE]:
-                matches.append(task)
+def remove_by_id():
+    if (options[OPT_ID] < 1): # ? examine moving to parse_args()
+        print(f"Invalid ID provided: '{options[OPT_ID]}'")
+        sys.exit()
 
-        if not matches:
-            print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
+    for task in table[TBL_CONTENTS]:
+        if task.get_id() == options[OPT_ID]:
+            table[TBL_CONTENTS].remove(task)
+            write_tasks()
             return
         
-        if len(matches) > 1:
-            print("Several tasks match provdided title. Select one to remove by index:" )
-            display_tasks(matches, detailed=True)
-            print(f"Select index in range 1-{len(matches)}.")
+    print(f"Could not locate a task on table with ID: '{options[OPT_ID]}'")
 
-            # todo: function get_int(), and function get_index()
-            i = int(input("> "))
-            i -= 1
-            # todo: if in valid range
-        else:
-            i = 0
+def remove_by_title():
+    matches = []
 
-        table[TBL_CONTENTS].remove(matches[i])
-        write_tasks()
+    for i, task in enumerate(table[TBL_CONTENTS]):
+        if task.get_title() == options[OPT_TITLE]:
+            matches.append(task)
+
+    if not matches:
+        print(f"Could not locate a task on table with title: '{options[OPT_TITLE]}'")
+        return
+    
+    if len(matches) > 1:
+        print("Several tasks match provdided title. Select one to remove by index:" )
+        display_tasks(matches, detailed=True)
+        print(f"Select index in range 1-{len(matches)}.")
+
+        # todo: function get_int(), and function get_index()
+        i = int(input("> "))
+        i -= 1
+        # todo: if in valid range
+    else:
+        i = 0
+
+    table[TBL_CONTENTS].remove(matches[i])
+    write_tasks()
 
 def import_table(filename, local):
     with open(filename, "r") as f:
