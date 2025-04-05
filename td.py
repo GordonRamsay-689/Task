@@ -48,6 +48,8 @@ def execute(fn, options):
         else:
             print("Nothing to remove. Function remove requires arguments")
             sys.exit()
+    elif fn == FN_STASH:
+        pass # Todo: implement stash function, file that holds tables.
     elif fn == FN_LIST:
         display_table(options)
         sys.exit()
@@ -74,11 +76,12 @@ def remove_by_id(id):
     # ? sys.exit()
 
 def remove_by_index(index):
-    if index > len(table[TBL_CONTENTS]):
+    try:
+        table[TBL_CONTENTS].pop(index - 1)
+    except IndexError:
         print(f"Provided index out of range: '{index}'")
         sys.exit()
 
-    table[TBL_CONTENTS].pop(index - 1)
     for options in queue:
         if index < options[OPT_INDEX]: 
             options[OPT_INDEX] -= 1
