@@ -135,6 +135,9 @@ def init_options(fn):
 def is_keyword(x):
     return x in OPTION_ALIASES.keys() or x in FUNCTIONS.keys()
 
+def populated(d):
+    return any(d[key] for key in d) 
+
 def parse_args(args):    
     queue = []
     
@@ -159,7 +162,7 @@ def parse_args(args):
             opt = OPTION_ALIASES[arg]
 
             # Denotes new task
-            if opt in [OPT_TITLE, OPT_ID, OPT_INDEX] and options[opt]:
+            if opt in [OPT_TITLE, OPT_ID, OPT_INDEX] and populated(options):
                 queue.append(options)
                 options = init_options(fn)
 
