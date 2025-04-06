@@ -6,15 +6,36 @@ import json
 from globals import * 
 from task import Task
 
-def add(options):
-    task = Task(title=options[OPT_TITLE], 
-                resources=options[OPT_RESOURCES])
+def stash(options):
+    pass # example of implementation with planed data structure storage
+    group = storage["active"]["name"] or options[OPT_GROUP]
 
+    if not group or invalid_group_name(group):
+        raise SomeException("Unable to stash group without a valid group name.")
+    
+    for task in storage["active"][TBL_CONTENTS]:
+        task.set_group(group)
+        storage["stash"].append(task)
+
+    clear()
+
+def add(options):
+    # adapt check to 
     if len(table[TBL_CONTENTS]) >= 10:
         print(f"Table is full. Unable to add new task: {task.get_title()}")
         sys.exit()
 
-    table[TBL_CONTENTS].append(task)
+    task = Task(title=options[OPT_TITLE], 
+                resources=options[OPT_RESOURCES])
+    
+    task.set_group(options[OPT_GROUP])
+    if not task.get_group():
+        task.set_group(storage["active"][TBL_NAME])
+
+    if task.get_group() != storage["active"][TBL_NAME]:
+        storage["stash"].append(task)
+    else:
+        storage["active"][TBL_CONTENTS].append(task)
 
     write_tasks()
 
@@ -219,6 +240,9 @@ def parse_opt_args(args, options, opt):
 
 def write_tasks():
     wtable = copy.deepcopy(TABLE)
+
+    wtable[TBL_NAME] = table[TBL_NAME]
+
     for task in table[TBL_CONTENTS]:
         wtable[TBL_CONTENTS].append(task.write_dict())
 

@@ -24,7 +24,8 @@ class Task:
             TSK_COMMENT: "", 
             TSK_DESCRIPTION: "", 
             TSK_RESOURCES: [], 
-            TSK_ID: 0
+            TSK_ID: 0,
+            TSK_GROUP: ""
         }
 
         if taskd:
@@ -32,6 +33,7 @@ class Task:
         else:
             self._comment = comment
             self._description = description
+            self._group = ""
             self._id = self.generate_task_id()
             self._resources = resources
             self._status = status
@@ -43,6 +45,7 @@ class Task:
         try:
             self._comment = taskd[TSK_COMMENT]
             self._description = taskd[TSK_DESCRIPTION]
+            self._group = taskd[TSK_GROUP]
             self._id = taskd[TSK_ID]
             self._resources = taskd[TSK_RESOURCES]
             self._status = taskd[TSK_STATUS]
@@ -69,7 +72,8 @@ class Task:
         self._taskd[TSK_RESOURCES] = self._resources
         self._taskd[TSK_STATUS] = self._status
         self._taskd[TSK_TITLE] = self._title
-
+        self._taskd[TSK_GROUP] = self._group 
+        
         return self._taskd 
         
     def __str__(self, ):
@@ -106,6 +110,12 @@ class Task:
 
     def get_title(self):
         return self._title
+
+    def get_group(self):
+        return self._group
+    
+    def set_group(self, group_name):
+        self._group = group_name
 
     def generate_task_id(self): # Todo
         return 1 

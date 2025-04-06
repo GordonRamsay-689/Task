@@ -4,6 +4,7 @@ MAX_RESOURCES_TO_DISPLAY = 2
 
 # Option Keywords
 OPT_DETAILED = "detailed"
+OPT_GROUP = "group"
 OPT_ID = "id"
 OPT_INDEX = "index"
 OPT_RESOURCES = "resources"
@@ -15,7 +16,8 @@ OPTION_ALIASES = {
     "-r": OPT_RESOURCES,
     "-resources": OPT_RESOURCES,
     "-id": OPT_ID,
-    "-n": OPT_INDEX
+    "-n": OPT_INDEX,
+    "-g": OPT_GROUP
 }
 
 # Function Keywords
@@ -29,7 +31,8 @@ FN_STASH = "stash"
 FUNCTIONS = {
     FN_ADD: {
         OPT_TITLE: "",
-        OPT_RESOURCES: []
+        OPT_RESOURCES: [],
+        OPT_GROUP: ""
     },
     FN_REMOVE: {
         OPT_TITLE: "",
@@ -45,11 +48,12 @@ FUNCTIONS = {
 }
 
 # Task
-TSK_STATUS = "completed"
-TSK_TITLE = "title"
 TSK_COMMENT = "comment"
 TSK_DESCRIPTION = "description"
+TSK_GROUP = "group"
 TSK_RESOURCES = "resources"
+TSK_STATUS = "completed"
+TSK_TITLE = "title"
 TSK_ID = "id"
 
 COMPLETED_SYMBOL = 'x'
