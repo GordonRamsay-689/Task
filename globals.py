@@ -48,19 +48,21 @@ FUNCTIONS = {
 }
 
 # Task
-TSK_COMMENT = "comment"
+TSK_COMMENTS = "comment"
 TSK_DESCRIPTION = "description"
-TSK_GROUP = "group"
 TSK_RESOURCES = "resources"
 TSK_STATUS = "completed"
+TSK_SUBTASKS = "subtasks"
 TSK_TITLE = "title"
-TSK_ID = "id"
+
+TASKD_TEMPLATE = {
+    TSK_COMMENTS: [], 
+    TSK_DESCRIPTION: "", 
+    TSK_RESOURCES: [],
+    TSK_STATUS: False, 
+    TSK_SUBTASKS: [],
+    TSK_TITLE: ""
+}
 
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
-
-# Table
-TBL_NAME = "name"
-TBL_CONTENTS = "contents"
-
-TABLE = {TBL_NAME: "", TBL_CONTENTS: []}

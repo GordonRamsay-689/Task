@@ -1,3 +1,4 @@
+import copy
 from globals import *
 
 class Task:
@@ -11,7 +12,7 @@ class Task:
     Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
     as the data types are not complex. """
 
-    def __init__(self, taskd=None, status=False, title="", comment="", description="", resources=[]):
+    def __init__(self, task_id=0, taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
         will be ignored.
@@ -19,36 +20,29 @@ class Task:
         If no task_dict and no title is provided a title will be generated.
         '''
 
-        self._taskd = {
-            TSK_TITLE: "", 
-            TSK_COMMENT: "", 
-            TSK_DESCRIPTION: "", 
-            TSK_RESOURCES: [], 
-            TSK_ID: 0,
-            TSK_GROUP: ""
-        }
+        self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
-        if taskd:
-            self._load_dict(taskd)
+        if taskd and task_id != 0:
+            self._id = task_id
+            self._load_dict(taskd, task_id)
         else:
-            self._comment = comment
+            self._comments = comments
             self._description = description
-            self._group = ""
             self._id = self.generate_task_id()
             self._resources = resources
             self._status = status
+            self._subtasks = subtasks
             self._title = title or self.generate_task_title()
 
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
-
+        
         try:
-            self._comment = taskd[TSK_COMMENT]
+            self._comments = taskd[TSK_COMMENTS]
             self._description = taskd[TSK_DESCRIPTION]
-            self._group = taskd[TSK_GROUP]
-            self._id = taskd[TSK_ID]
             self._resources = taskd[TSK_RESOURCES]
             self._status = taskd[TSK_STATUS]
+            self._subtasks = taskd[TSK_SUBTASKS]
             self._title = taskd[TSK_TITLE]
         except KeyError:
             print("Failed to load task, missing key-value pair. The data may have already been corrupted before attempt to load.")
@@ -66,15 +60,15 @@ class Task:
             print("No task id. Task data may be corrupted.")
             raise ValueError 
 
-        self._taskd[TSK_COMMENT] = self._comment
+        self._taskd[TSK_COMMENTS] = self._comments
         self._taskd[TSK_DESCRIPTION] = self._description
-        self._taskd[TSK_ID] = self._id
         self._taskd[TSK_RESOURCES] = self._resources
         self._taskd[TSK_STATUS] = self._status
+        self._taskd[TSK_SUBTASKS] = self._subtasks
         self._taskd[TSK_TITLE] = self._title
-        self._taskd[TSK_GROUP] = self._group 
+        key = self._id
         
-        return self._taskd 
+        return self._taskd, key
         
     def __str__(self, ):
         return self._get_header_str()
@@ -93,8 +87,8 @@ class Task:
     def _get_pad(self, i, indent, section_title):
         return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
 
-    def get_comment(self):
-        return self._comment
+    def get_comments(self):
+        return self._comments
 
     def get_description(self):
         return self._description
@@ -108,14 +102,11 @@ class Task:
     def get_status(self):
         return self._status
 
+    def get_substasks(self):
+        return self._subtasks
+
     def get_title(self):
         return self._title
-
-    def get_group(self):
-        return self._group
-    
-    def set_group(self, group_name):
-        self._group = group_name
 
     def generate_task_id(self): # Todo
         return 1 
@@ -130,9 +121,10 @@ class Task:
         t = self._get_header_str() + '\n'
 
         section_title = [
-            "Comment" if self._comment else "", 
+            "Comments" if self._comments else "", 
             "Description" if self._description else "", 
             "Resources" if self._resources else "",
+            "Subtasks" if self._subtasks else ""
         ]
         
         if any(title for title in section_title): 
@@ -141,9 +133,12 @@ class Task:
 
             indentation = max(len(title) for title in section_title) + 2  # + 2 represent ': '
             
+            if section_title[3]:
+                t += f"\t{section_title[3]}: {' ' * pad}{len(self._subtasks)}\n"
+
             if section_title[0]:
                 pad = self._get_pad(0, indentation, section_title)
-                t += f"\t{section_title[0]}: {' ' * pad}{self._comment}\n"
+                t += f"\t{section_title[0]}: {' ' * pad}{self._comments}\n"
 
             if section_title[2]:
                 n = len(self._resources)
@@ -163,5 +158,5 @@ class Task:
 
                 if n > MAX_RESOURCES_TO_DISPLAY:
                     t += f"\t{' ' * indentation}{n - MAX_RESOURCES_TO_DISPLAY} more resources.\n"
-        
+
         return t

@@ -247,7 +247,7 @@ def write_tasks():
         wtable[TBL_CONTENTS].append(task.write_dict())
 
     with open("table.json", "w") as f:
-        f.write(json.dumps(wtable, ensure_ascii=False))
+        json.dump(wtable, f, ensure_ascii=False)
 
 if __name__ == '__main__':
     table = copy.deepcopy(TABLE)
