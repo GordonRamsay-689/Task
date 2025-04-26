@@ -225,6 +225,14 @@ def parse_opt_args(args, options, opt):
             return
         elif isinstance(options[opt], str):
             options[opt] = arg
+
+            if opt == OPT_ID:
+                try:
+                    int(arg, 36)
+                except ValueError:
+                    print(f"Invalid argument provided to option '-{opt}': {arg}")
+                    sys.exit()
+
             return
 
         options[opt].append(arg)

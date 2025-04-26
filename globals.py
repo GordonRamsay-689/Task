@@ -36,7 +36,7 @@ FUNCTIONS = {
     },
     FN_REMOVE: {
         OPT_TITLE: "",
-        OPT_ID: 0,
+        OPT_ID: "0",
         OPT_INDEX: 0,
     }, 
     FN_CLEAR: {}, 

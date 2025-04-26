@@ -12,7 +12,7 @@ class Task:
     Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
     as the data types are not complex. """
 
-    def __init__(self, task_id=0, taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
+    def __init__(self, task_id="0", taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
         will be ignored.
@@ -22,7 +22,7 @@ class Task:
 
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
-        if taskd and task_id != 0:
+        if taskd:
             self._id = task_id
             self._load_dict(taskd, task_id)
         else:
@@ -56,7 +56,7 @@ class Task:
         Example usage: Writing a task to JSON
         '''
 
-        if self._id == 0:
+        if self._id == "0":
             print("No task id. Task data may be corrupted.")
             raise ValueError 
 
@@ -70,7 +70,7 @@ class Task:
         
         return self._taskd, key
         
-    def __str__(self, ):
+    def __str__(self):
         return self._get_header_str()
 
     def _get_header_str(self):
