@@ -1,10 +1,10 @@
 import copy
+from id_gen import generate_id
 from globals import *
 
 class Task:
     """ While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
-    When updating a task only the object attributes are updated, until you choose to either write the task 
-    or delete it. 
+    When updating a task only the object attributes are updated, until updated data is commited. 
 
     For example deleting a task by title after that title has been changed from what it was upon import will 
     delete the task from .JSON using its Task.id. The id can never be changed under any circumstance.
@@ -108,8 +108,9 @@ class Task:
     def get_title(self):
         return self._title
 
-    def generate_task_id(self): # Todo
-        return 1 
+    def generate_task_id(self):
+        current_id = max(table["tasks"].keys(), key=lambda id: int(id, 36))
+        return generate_id(current_id)
 
     def generate_task_title(self): # Todo
         return "Untitled"
