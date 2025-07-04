@@ -2,3 +2,4 @@ __pycache__/
 table.json
 .vscode/
 *.json
+dev/
