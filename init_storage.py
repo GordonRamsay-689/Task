@@ -4,8 +4,8 @@ from globals import *
 
 # IDs are in base 36, hence strings
 storage = {
-    "active": "0",
-    "groups": {"0": ["0"]},
+    "active_group": "0",
+    "groups": {"0": {"task_ids": ["0"], "name": ''}},
     "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
 }
 
