@@ -1,1 +1,21 @@
-{"active": "0", "groups": {"0": ["0"]}, "tasks": {"0": {"comment": [], "description": "", "resources": [], "completed": false, "subtasks": [], "title": ""}}}
+{
+    "active_group": "0",
+    "groups": {
+        "0": {
+            "task_ids": [
+                "0"
+            ],
+            "name": ""
+        }
+    },
+    "tasks": {
+        "0": {
+            "comment": [],
+            "description": "",
+            "resources": [],
+            "completed": false,
+            "subtasks": [],
+            "title": ""
+        }
+    }
+}
