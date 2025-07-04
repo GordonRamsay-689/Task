@@ -1,3 +1,5 @@
+PROGRAM_NAME = "ctd"
+
 # Configurable variables.
 MAX_TITLE_LENGTH = 38
 MAX_RESOURCES_TO_DISPLAY = 2

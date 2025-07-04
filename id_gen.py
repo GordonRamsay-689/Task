@@ -1,30 +1,12 @@
-import csv
-
-def get_settings():
-    ''' Return settings from data.csv as a dict. '''
-
-    with open("data.csv", "r") as f:
-        dreader = csv.DictReader(f)
-        data = dreader.__next__()
-    return data
-
-def write_settings(d):
-    ''' Write to settings file data.csv from dict. '''
-    with open("data.csv", "w") as f:
-        writer = csv.DictWriter(f, fieldnames=d.keys())
-
-        writer.writeheader()
-        writer.writerow(d)
-
 def generate_id(current_id):
     ''' Reads current ID and generates next ID, write as current and return. '''
 
     try:
-        next_id  = increment_id(data["CURRENT_ID"])
+        id  = increment_id(current_id)
     except KeyError:
         pass # set ID to 0 or fatal system exit
 
-    return next_id
+    return id
 
 def int_to_base(n, base):
     ''' Converts positive int 'n' to string in given 'base' between 10 and 36 inclusive.

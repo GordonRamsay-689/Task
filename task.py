@@ -12,13 +12,15 @@ class Task:
     Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
     as the data types are not complex. """
 
-    def __init__(self, task_id="0", taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
+    def __init__(self, master, task_id="0", taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
         will be ignored.
 
         If no task_dict and no title is provided a title will be generated.
         '''
+
+        self.master = master
 
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
@@ -34,7 +36,7 @@ class Task:
             self._subtasks = subtasks
             self._title = title or self.generate_task_title()
 
-    def _load_dict(self, taskd):
+    def _load_dict(self, taskd, task_id):
         ''' Loads an existing dictionary into Task. '''
         
         try:
@@ -51,12 +53,13 @@ class Task:
         self._taskd = taskd
     
     def write_dict(self):
-        ''' Updates the self._taskd dictionary and returns it. 
+        ''' Updates the self._taskd dictionary and returns it.
 
         Example usage: Writing a task to JSON
         '''
 
-        if self._id == "0":
+        # ! INSPECT
+        if self._id == "-1":
             print("No task id. Task data may be corrupted.")
             raise ValueError 
 
@@ -66,9 +69,8 @@ class Task:
         self._taskd[TSK_STATUS] = self._status
         self._taskd[TSK_SUBTASKS] = self._subtasks
         self._taskd[TSK_TITLE] = self._title
-        key = self._id
         
-        return self._taskd, key
+        return self._taskd
         
     def __str__(self):
         return self._get_header_str()
@@ -109,8 +111,9 @@ class Task:
         return self._title
 
     def generate_task_id(self):
-        current_id = max(table["tasks"].keys(), key=lambda id: int(id, 36))
-        return generate_id(current_id)
+        id = generate_id(self.master.data["current_id"])
+        self.master.data["current_id"] = id
+        return id
 
     def generate_task_title(self): # Todo
         return "Untitled"
