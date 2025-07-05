@@ -26,7 +26,7 @@ class Task:
 
         if taskd:
             self._id = task_id
-            self._load_dict(taskd, task_id)
+            self._load_dict(taskd)
         else:
             self._comments = comments
             self._description = description
@@ -36,7 +36,7 @@ class Task:
             self._subtasks = set(subtasks)
             self._title = title or self.generate_task_title()
 
-    def _load_dict(self, taskd, task_id):
+    def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
         
         try:
