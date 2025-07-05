@@ -32,14 +32,12 @@ class Master:
         try:
             with open(self.STORAGE_PATH, mode='r') as f:
                 data = json.loads(f.read())
-        except FileNotFoundError as e:
-            self.handle_error(e, error_type=FileNotFoundError, data=[self.STORAGE_PATH])
-        except PermissionError as e:
-            self.handle_error(e, error_type=PermissionError, data=[self.STORAGE_PATH])
         except json.JSONDecodeError as e:
-            self.ui.error(error=e, fatal=True, info=f"The stored data at '{self.STORAGE_PATH}' is CORRUPTED.")
+            self.ui.error(error=e, error_class=type(e), fatal=True, info=f"The stored data at '{self.STORAGE_PATH}' is CORRUPTED.")
+        except (FileNotFoundError, PermissionError) as e:
+            self.handle_error(e=e, data=[self.STORAGE_PATH])
         except Exception as e:
-            self.handle_error(e)
+            self.handle_error(e=e, data=[f"An error occured while reading data from file at '{self.STORAGE_PATH}'."])
 
         if data:
             self.data = data
@@ -60,12 +58,10 @@ class Master:
         try:
             with open(self.STORAGE_PATH, mode='w') as f:
                 json.dump(data, f) # ? Is ensure_ascii=True necessary?
-        except FileNotFoundError as e:
-            self.handle_error(e, error_type=FileNotFoundError, data=[self.STORAGE_PATH])
-        except PermissionError as e:
-            self.handle_error(e, error_type=PermissionError, data=[self.STORAGE_PATH])
+        except (FileNotFoundError, PermissionError) as e:
+            self.handle_error(e=e, data=[self.STORAGE_PATH])
         except Exception as e:
-            self.ui.error(error=e, fatal=True, info=f"An error occured while writing data to storage file at: '{self.STORAGE_PATH}'")
+            self.handle_error(e=e, data=[f"An error occured while writing data to storage file at: '{self.STORAGE_PATH}'"])
 
         pass # Todo: check for write success
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
@@ -79,7 +75,7 @@ class Master:
         try:
             task_ids_list = self.data["groups"][group_id]["task_ids"]
         except KeyError:
-            self.handle_error(e=None, error_type=GroupNotFoundError, data=[group_id])
+            self.handle_error(error_class=GroupNotFoundError, data=[group_id])
             return
 
         for task_id in task_ids_list:
@@ -91,35 +87,58 @@ class Master:
             if isinstance(self.data["tasks"][task_id], Task):
                 return
         except KeyError:
-            self.handle_error(e=None, error_type=TaskNotFoundError, data=[task_id])
+            self.handle_error(error_class=TaskNotFoundError, data=[task_id])
             return
         
         self.data["tasks"][task_id] = Task(self, taskd=self.data["tasks"][task_id])
 
-    def init_storage_file(self):
-        from init_storage import init_storage
-        init_storage(self.SCRIPT_DIR)
+    def init_storage_file(self):    
+        # IDs are in base 36, hence strings
+        storage = {
+            "current_id": "0",
+            "active_group": "0",
+            "groups": {"0": {"task_ids": ["0"], "name": ''}},
+            "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
+        }
+
+        with open(self.STORAGE_PATH, "w") as f:
+            f.write(json.dumps(storage, ensure_ascii=False))
+
+        with open(self.STORAGE_PATH, "r") as f:
+            written = json.loads(f.read())
+
+            if written == storage:
+                self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
+            else:
+                info = f"Expected: {storage}/nActual: {written}/nFailed to dump or read dumped file"
+                self.ui.error(info=info, fatal=True)
 
     def get_script_dir(self):
         ''' Get the directory of main.py '''
         return os.path.abspath(__file__).strip('main.py')
 
-    def handle_error(self, e, error_type=None, data=[]):
-        if not error_type:
-            self.ui.error(error=e, fatal=True, info="Unexpected error occured.")
-        elif error_type == FileNotFoundError:
-            self.ui.error(error=e, info=f"Could not locate file at: '{data[0]}'")
-        elif error_type == PermissionError:
-            self.ui.error(error=e, info=f"No permission to access file at: '{data[0]}'/n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
-        elif error_type == GroupNotFoundError:
-            self.ui.error(info=f"No group found with id: '{data[0]}'")
-        elif error_type == TaskNotFoundError:
-            self.ui.error(info=f"No task found with id: '{data[0]}'")
+    def handle_error(self, e=None, error_class=None, data=[]):
 
+        if not error_class:
+            error_class = type(e)
+
+        if error_class == FileNotFoundError:
+            self.ui.error(error=e, error_class=error_class, info=f"Could not locate file at: '{data[0]}'")
+        elif error_class == PermissionError:
+            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'/n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
+        elif error_class == GroupNotFoundError:
+            self.ui.error(error_class=error_class, info=f"No group found with id: '{data[0]}'")
+        elif error_class == TaskNotFoundError:
+            self.ui.error(error_class=error_class, info=f"No task found with id: '{data[0]}'")
+        else: # Intended for unexpected or unknown errors.
+            info = "Unexpected error occured." if not data else data[0]
+            self.ui.error(error=e, error_class=error_class, fatal=True, info=info)
+    
     def main(self):
-        task = Task(self)
-        self.data["tasks"][task.get_id()] = task
-        self.write_data()
+        pass
+        # task = Task(self)
+        # self.data["tasks"][task.get_id()] = task
+        # self.write_data()
 
 if __name__ == '__main__':
     class UI:
@@ -139,16 +158,20 @@ if __name__ == '__main__':
             u_in = input("> ")
             return u_in
 
-        def error(self, error='', info='', fatal=False):
+        def error(self, error='', error_class=None, info='', fatal=False):
             ''' Provides information about an error. 
             
-            If fatal=True the error is so severe that the program cannot continue. It is recommended for a UI to exit in this situation. 
+            If fatal=True the error is so severe that the program cannot continue.
             '''
+
+            if error_class:
+                print("Class: ", end='')
+                print(error_class)
 
             if error:
                 print("Error: ", end='')
                 print(error)
-
+            
             if info:
                 print("Info: ", end='')
                 print(info)
@@ -157,6 +180,4 @@ if __name__ == '__main__':
                 print("A fatal error has occured. Exiting without updating storage file.")
                 sys.exit()
 
-    ui = UI()
-
-    master = Master(ui)
+    master = Master(UI())
