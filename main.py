@@ -141,7 +141,7 @@ class Master:
         # self.write_data()
 
 if __name__ == '__main__':
-    class UI:
+    class DevUI:
         ''' Simple frontend for development purposes. 
         
         Serves as example for other frontends. Frontends must define the function headers defined here.   
@@ -180,4 +180,4 @@ if __name__ == '__main__':
                 print("A fatal error has occured. Exiting without updating storage file.")
                 sys.exit()
 
-    master = Master(UI())
+    master = Master(DevUI())
