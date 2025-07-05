@@ -33,7 +33,7 @@ class Task:
             self._id = self.generate_task_id()
             self._resources = resources
             self._status = status
-            self._subtasks = subtasks
+            self._subtasks = set(subtasks)
             self._title = title or self.generate_task_title()
 
     def _load_dict(self, taskd, task_id):
@@ -44,7 +44,7 @@ class Task:
             self._description = taskd[TSK_DESCRIPTION]
             self._resources = taskd[TSK_RESOURCES]
             self._status = taskd[TSK_STATUS]
-            self._subtasks = taskd[TSK_SUBTASKS]
+            self._subtasks = set(taskd[TSK_SUBTASKS])
             self._title = taskd[TSK_TITLE]
         except KeyError:
             print("Failed to load task, missing key-value pair. The data may have already been corrupted before attempt to load.")
@@ -52,22 +52,20 @@ class Task:
         
         self._taskd = taskd
     
+    def add_subtask(self, subtask_id):
+        self._subtasks.add(subtask_id)
+
     def write_dict(self):
         ''' Updates the self._taskd dictionary and returns it.
 
         Example usage: Writing a task to JSON
         '''
 
-        # ! INSPECT
-        if self._id == "-1":
-            print("No task id. Task data may be corrupted.")
-            raise ValueError 
-
         self._taskd[TSK_COMMENTS] = self._comments
         self._taskd[TSK_DESCRIPTION] = self._description
         self._taskd[TSK_RESOURCES] = self._resources
         self._taskd[TSK_STATUS] = self._status
-        self._taskd[TSK_SUBTASKS] = self._subtasks
+        self._taskd[TSK_SUBTASKS] = list(self._subtasks)
         self._taskd[TSK_TITLE] = self._title
         
         return self._taskd
@@ -104,7 +102,7 @@ class Task:
     def get_status(self):
         return self._status
 
-    def get_substasks(self):
+    def get_subtasks(self):
         return self._subtasks
 
     def get_title(self):
@@ -112,7 +110,7 @@ class Task:
 
     def generate_task_id(self):
         id = generate_id(self.master.data["current_id"])
-        self.master.data["current_id"] = id
+        self.master.update_current_id(id)
         return id
 
     def generate_task_title(self): # Todo

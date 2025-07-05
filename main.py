@@ -10,6 +10,7 @@ TaskNotFoundError = "TaskNotFound"
 # TODO: check for success on write in write_data()
 
 class Master:
+    ''' Manages I/O operations and Task objects. '''
     def __init__(self, ui):
         self.ui = ui
 
@@ -22,7 +23,33 @@ class Master:
 
         self.load_group(self.data["active_group"])
 
-        self.main()
+    def create_task(self, group_id=None, subtask=False, task_kwargs={}):
+        ''' Creates a Task with provided kwargs and updates data. '''
+        try:
+            task = Task(master=self, **task_kwargs)
+        except TypeError as e:
+            self.handle_error(e=e)
+
+        self.data["tasks"][task.get_id()] = task
+
+        if not subtask:
+            # Adds task to a group if not a subtask
+            group_id = self.data["active_group"] if not group_id else group_id
+
+            self.data["groups"][group_id]
+        
+        return task.get_id()
+
+    def create_subtask(self, parent_task_id):
+        ''' Creates a Task and adds Task id to parent Task's substask set. '''
+        task_id = self.create_task(subtask=True, task_kwargs={})
+        
+        try:
+            self.load_task(parent_task_id)
+        except KeyError:
+            return
+
+        self.data["tasks"][parent_task_id].add_subtask(task_id)
 
     def load_data(self):
         ''' Loads data (tasks and groups) from storage file to self.data. '''
@@ -77,10 +104,10 @@ class Master:
         except KeyError:
             self.handle_error(error_class=GroupNotFoundError, data=[group_id])
             return
-
+        
         for task_id in task_ids_list:
             self.load_task(task_id)
-
+        
     def load_task(self, task_id):
         ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
         try:
@@ -88,9 +115,12 @@ class Master:
                 return
         except KeyError:
             self.handle_error(error_class=TaskNotFoundError, data=[task_id])
-            return
+            raise KeyError
         
         self.data["tasks"][task_id] = Task(self, taskd=self.data["tasks"][task_id])
+    
+        for subtask_id in self.data["tasks"][task_id].get_subtasks():
+            self.load_task(subtask_id)
 
     def init_storage_file(self):    
         # IDs are in base 36, hence strings
@@ -117,6 +147,10 @@ class Master:
         ''' Get the directory of main.py '''
         return os.path.abspath(__file__).strip('main.py')
 
+    def update_current_id(self, id):
+        ''' Set current id to id. Called by Task. '''
+        self.data["current_id"] = id
+
     def handle_error(self, e=None, error_class=None, data=[]):
 
         if not error_class:
@@ -133,12 +167,6 @@ class Master:
         else: # Intended for unexpected or unknown errors.
             info = "Unexpected error occured." if not data else data[0]
             self.ui.error(error=e, error_class=error_class, fatal=True, info=info)
-    
-    def main(self):
-        pass
-        # task = Task(self)
-        # self.data["tasks"][task.get_id()] = task
-        # self.write_data()
 
 if __name__ == '__main__':
     class DevUI:
