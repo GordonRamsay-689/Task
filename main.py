@@ -70,9 +70,14 @@ class Master:
             self.data = data
         else:
             self.ui.error(info=f"No data loaded from storage at {self.STORAGE_PATH}.")
-            u_in = self.ui.request("Do you wish to create create an empty storage file? (Y/n)")
-            if u_in.upper() == 'Y':
+
+            kwargs = {"request_type": bool, 
+                      "message": "Do you wish to create create an empty storage file?"}
+            if self.ui.request(**kwargs) == True:
                 self.init_storage_file()
+            else:
+                self.ui.error(fatal=True, info="Cannot continue without a storage file.")
+
             self.load_data()
 
     def write_data(self):
@@ -179,12 +184,28 @@ if __name__ == '__main__':
             ''' Relays a message to the user. '''
             print(message)
         
-        def request(self, message=''):
+        def request(self, request_type=bool, message=''):
             ''' Requests information from the user. '''
+            def prompt_user(prompt):
+                u_in = ''
+                while not u_in:
+                    u_in = input(prompt)
+                return u_in
 
             print("Please provide:", message)
-            u_in = input("> ")
-            return u_in
+
+            if request_type is bool:
+                if prompt_user("(Y/n)> ").lower().startswith('y'):
+                    return True
+                else:
+                    return False
+            elif request_type is str:                
+                return prompt_user("> ")
+            elif request_type is int:
+                u_in = ''
+                while not u_in.isdecimal():
+                    u_in = prompt_user("> ")
+                return int(u_in)
 
         def error(self, error='', error_class=None, info='', fatal=False):
             ''' Provides information about an error. 
