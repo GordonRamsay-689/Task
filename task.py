@@ -46,9 +46,9 @@ class Task:
             self._status = taskd[TSK_STATUS]
             self._subtasks = set(taskd[TSK_SUBTASKS])
             self._title = taskd[TSK_TITLE]
-        except KeyError:
-            print("Failed to load task, missing key-value pair. The data may have already been corrupted before attempt to load.")
-            raise
+        except KeyError as e:
+            self.master.ui.error(error=e, error_class=type(e), info=f"Failed to load task with the following data: {taskd}\nData may be corrupted.")
+            raise e 
         
         self._taskd = taskd
     

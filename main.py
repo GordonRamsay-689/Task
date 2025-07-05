@@ -2,10 +2,6 @@ import os, sys, json, copy
 from task import Task
 from globals import *
 
-# Custom "errors"
-GroupNotFoundError = "GroupNotFound"
-TaskNotFoundError = "TaskNotFound"
-
 # TODO: adapt task.py to use master.ui and master.handle_error().
 # TODO: check for success on write in write_data()
 
@@ -29,6 +25,7 @@ class Master:
             task = Task(master=self, **task_kwargs)
         except TypeError as e:
             self.handle_error(e=e)
+            return
 
         self.data["tasks"][task.get_id()] = task
 
@@ -36,8 +33,12 @@ class Master:
             # Adds task to a group if not a subtask
             group_id = self.data["active_group"] if not group_id else group_id
 
-            self.data["groups"][group_id]
-        
+            try:        
+                self.data["groups"][group_id]["task_ids"].append(task.get_id())
+            except KeyError as e:
+                self.handle_error(error_class=GroupNotFoundError, data=[group_id])
+                return task.get_id()
+
         return task.get_id()
 
     def create_subtask(self, parent_task_id):
@@ -122,7 +123,12 @@ class Master:
             self.handle_error(error_class=TaskNotFoundError, data=[task_id])
             raise KeyError
         
-        self.data["tasks"][task_id] = Task(self, taskd=self.data["tasks"][task_id])
+        try:
+            task = Task(self, taskd=self.data["tasks"][task_id])
+        except KeyError: # Failed to load task.
+            return
+
+        self.data["tasks"][task_id] = task
     
         for subtask_id in self.data["tasks"][task_id].get_subtasks():
             self.load_task(subtask_id)
@@ -145,7 +151,7 @@ class Master:
             if written == storage:
                 self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
             else:
-                info = f"Expected: {storage}/nActual: {written}/nFailed to dump or read dumped file"
+                info = f"Expected: {storage}\nActual: {written}\nFailed to dump or read dumped file"
                 self.ui.error(info=info, fatal=True)
 
     def get_script_dir(self):
@@ -164,7 +170,7 @@ class Master:
         if error_class == FileNotFoundError:
             self.ui.error(error=e, error_class=error_class, info=f"Could not locate file at: '{data[0]}'")
         elif error_class == PermissionError:
-            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'/n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
+            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'\n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
         elif error_class == GroupNotFoundError:
             self.ui.error(error_class=error_class, info=f"No group found with id: '{data[0]}'")
         elif error_class == TaskNotFoundError:
