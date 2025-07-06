@@ -12,7 +12,7 @@ class Task:
     Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
     as the data types are not complex. """
 
-    def __init__(self, master, task_id="0", taskd=None, status=False, title="", subtasks=[], comments=[], description="", resources=[]):
+    def __init__(self, master, task_id="0", taskd=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
         will be ignored.
@@ -34,6 +34,7 @@ class Task:
             self._resources = resources
             self._status = status
             self._subtasks = set(subtasks)
+            self._parents = set(parents)
             self._title = title or self.generate_task_title()
 
     def _load_dict(self, taskd):
@@ -45,6 +46,7 @@ class Task:
             self._resources = taskd[TSK_RESOURCES]
             self._status = taskd[TSK_STATUS]
             self._subtasks = set(taskd[TSK_SUBTASKS])
+            self._parents = set(taskd[TSK_PARENTS])
             self._title = taskd[TSK_TITLE]
         except KeyError as e:
             self.master.ui.error(error=e, error_class=type(e), info=f"Failed to load task with the following data: {taskd}\nData may be corrupted.")
@@ -54,6 +56,15 @@ class Task:
     
     def add_subtask(self, subtask_id):
         self._subtasks.add(subtask_id)
+
+    def remove_subtask(self, subtask_id):
+        self._subtasks.remove(subtask_id)
+
+    def add_parent(self, parent_id):
+        self._parents.add(parent_id)
+
+    def remove_parent(self, parent_id):
+        self._parents.remove(parent_id)
 
     def write_dict(self):
         ''' Updates the self._taskd dictionary and returns it.
@@ -66,6 +77,7 @@ class Task:
         self._taskd[TSK_RESOURCES] = self._resources
         self._taskd[TSK_STATUS] = self._status
         self._taskd[TSK_SUBTASKS] = list(self._subtasks)
+        self._taskd[TSK_PARENTS] = list(self._parents)
         self._taskd[TSK_TITLE] = self._title
         
         return self._taskd
@@ -103,7 +115,10 @@ class Task:
         return self._status
 
     def get_subtasks(self):
-        return self._subtasks
+        return list(self._subtasks)
+
+    def get_parents(self):
+        return list(self._parents)
 
     def get_title(self):
         return self._title
