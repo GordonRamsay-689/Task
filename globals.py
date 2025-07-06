@@ -56,6 +56,7 @@ TSK_RESOURCES = "resources"
 TSK_STATUS = "completed"
 TSK_SUBTASKS = "subtasks"
 TSK_TITLE = "title"
+TSK_PARENTS = "parents"
 
 TASKD_TEMPLATE = {
     TSK_COMMENTS: [], 
@@ -63,6 +64,7 @@ TASKD_TEMPLATE = {
     TSK_RESOURCES: [],
     TSK_STATUS: False, 
     TSK_SUBTASKS: [],
+    TSK_PARENTS: [],
     TSK_TITLE: ""
 }
 
