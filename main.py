@@ -17,8 +17,6 @@ class Master:
         self.load_data()
         self.STORAGE_BACKUP = copy.deepcopy(self.data)
 
-        self.load_group(self.data["active_group"])
-
     def _get_script_dir(self):
         ''' Get the directory of main.py '''
         return os.path.abspath(__file__).strip('main.py')
@@ -153,9 +151,9 @@ class Master:
                 return True
             else:
                 return False
-        except KeyError as e:
+        except KeyError:
             self._handle_error(error_class=TaskNotFoundError, data=[task_id])
-            raise e
+            raise
 
     def load_group(self, group_id):
         ''' Inside self.data: Converts task dicts to Task objects for tasks with matching group_id. '''        
@@ -163,13 +161,13 @@ class Master:
             task_ids_list = self.data["groups"][group_id]["task_ids"]
         except KeyError:
             self._handle_error(error_class=GroupNotFoundError, data=[group_id])
-            return
+            raise
         
         for task_id in task_ids_list:
             try:
                 self.load_task(task_id)
             except KeyError:
-                pass
+                pass # data corruption warning to self??
                 
     def load_task(self, task_id):
         ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
@@ -327,4 +325,7 @@ if __name__ == '__main__':
                 sys.exit()
 
     master = Master(DevUI())
-
+    try:
+        master.load_group(master.data["active_group"])
+    except KeyError: # ! Later, GroupNotFoundError
+        raise
