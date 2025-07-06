@@ -70,7 +70,3 @@ TASKD_TEMPLATE = {
 
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
-
-# Custom "errors"
-GroupNotFoundError = "GroupNotFound"
-TaskNotFoundError = "TaskNotFound"
