@@ -68,11 +68,17 @@ class Master:
         
         try:
             self.load_task(parent_task_id)
-        except KeyError:
+        except KeyError as e:
+            self.ui.relay("Aborting subtask creation.")
+            self.remove_task(task_id)
+            print(master.data["tasks"])
             return
 
+        self.data["tasks"][task_id].add_parent(parent_task_id)
         self.data["tasks"][parent_task_id].add_subtask(task_id)
-
+              
+        return task_id
+    
     def init_storage_file(self):    
         # IDs are in base 36, hence strings
         storage = {
@@ -127,9 +133,9 @@ class Master:
         ''' Writes data (tasks and groups) to storage file. '''
 
         data = copy.deepcopy(self.data)
-        for key, task in self.data["tasks"].items():
+        for task_id, task in self.data["tasks"].items():
             if isinstance(task, Task):
-                data["tasks"][key] = task.write_dict()
+                data["tasks"][task_id] = task.write_dict()
         try:
             with open(self.STORAGE_PATH, mode='w') as f:
                 json.dump(data, f) # ? Is ensure_ascii=True necessary?
@@ -141,6 +147,16 @@ class Master:
         pass # Todo: check for write success
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
 
+    def _is_Task(self, task_id):
+        try:
+            if isinstance(self.data["tasks"][task_id], Task):
+                return True
+            else:
+                return False
+        except KeyError as e:
+            self._handle_error(error_class=TaskNotFoundError, data=[task_id])
+            raise e
+
     def load_group(self, group_id):
         ''' Inside self.data: Converts task dicts to Task objects for tasks with matching group_id. '''        
         try:
@@ -150,26 +166,105 @@ class Master:
             return
         
         for task_id in task_ids_list:
-            self.load_task(task_id)
-        
+            try:
+                self.load_task(task_id)
+            except KeyError:
+                pass
+                
     def load_task(self, task_id):
         ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
         try:
-            if isinstance(self.data["tasks"][task_id], Task):
+            if self._is_Task(task_id):
                 return
         except KeyError:
-            self._handle_error(error_class=TaskNotFoundError, data=[task_id])
-            raise KeyError
-        
-        try:
-            task = Task(self, taskd=self.data["tasks"][task_id])
-        except KeyError: # Failed to load task.
-            return
+            raise
+
+        task = Task(self, taskd=self.data["tasks"][task_id])
 
         self.data["tasks"][task_id] = task
-    
+        
         for subtask_id in self.data["tasks"][task_id].get_subtasks():
-            self.load_task(subtask_id)
+            try:
+                self.load_task(subtask_id)
+            except KeyError:
+                raise 
+
+        for parent_id in self.data["tasks"][task_id].get_parents():
+            try:
+                self.load_task(parent_id)
+            except KeyError:
+                raise 
+
+    def remove_task(self, task_id):
+        ''' 
+        Removes a task and all of it's subtasks recursively from data["tasks"]. Deletes task from groups and parents' subtasks lists. 
+        '''
+
+        for group_id in self.data["groups"].keys():
+            self.remove_task_from_group(task_id, group_id)
+
+        try:
+            self.load_task(task_id)
+        except KeyError:
+            self._deep_remove_task(task_id) # A slower method of removal.
+            return
+
+        self.orphan_task(task_id)
+
+        for subtask_id in self.data["tasks"][task_id].get_subtasks():
+            self.remove_task(subtask_id)
+
+        self.data["tasks"].pop(task_id)
+
+    def _deep_remove_task(self, task_id):
+        ''' Goes through all tasks attempting to remove task_id from any substasks and parents lists. If a subtask is found, 
+        performs the same operation for it recursively. '''
+        for _task_id, task in self.data["tasks"].items():
+            
+            if not _task_id in self.data["tasks"].keys(): # ! If a subtask has been removed in a deeper recursion layer
+                continue
+
+            if self._is_Task(_task_id):
+                try:
+                    task.remove_subtask(task_id)
+                    self.deep_remove_task(_task_id)
+                except ValueError:
+                    pass
+
+                try:
+                    task.remove_parent(task_id)
+                except ValueError:
+                    pass
+            else:
+                try:
+                    task[TSK_SUBTASKS].remove(task_id)
+                    self.deep_remove_task(_task_id)
+                except ValueError:
+                    pass
+    
+                try:
+                    task[TSK_PARENTS].remove(task_id)
+                except ValueError:
+                    pass
+        try:
+            self.data["tasks"].pop(task_id)
+        except ValueError:
+            pass
+
+    def orphan_task(self, task_id):
+        ''' Removes a task from all parents' subtask lists. '''
+        for parent_id in self.data["tasks"][task_id].get_parents():
+            self.data["tasks"][parent_id].remove_subtask(task_id)
+
+    def remove_task_from_group(self, task_id, group_id):
+        ''' Removes a task from a group. '''
+        try:
+            self.data["groups"][group_id]["task_ids"].remove(task_id)
+        except KeyError as e:
+            self._handle_error(e=e, error_class=GroupNotFoundError, data=[group_id])
+            return
+        except ValueError: # task is not in group
+            return
 
     def update_current_id(self, id):
         ''' Set current id to id. Called by Task. '''
@@ -232,3 +327,4 @@ if __name__ == '__main__':
                 sys.exit()
 
     master = Master(DevUI())
+
