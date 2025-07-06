@@ -2,7 +2,7 @@ import os, sys, json, copy
 from task import Task
 from globals import *
 
-# TODO: adapt task.py to use master.ui and master.handle_error().
+# TODO: adapt task.py to use master.ui and master._handle_error().
 # TODO: check for success on write in write_data()
 
 class Master:
@@ -10,7 +10,7 @@ class Master:
     def __init__(self, ui):
         self.ui = ui
 
-        self.SCRIPT_DIR = self.get_script_dir()
+        self.SCRIPT_DIR = self._get_script_dir()
         self.STORAGE_PATH = os.path.join(self.SCRIPT_DIR, "storage.json")
 
         self.data = {}
@@ -19,12 +19,33 @@ class Master:
 
         self.load_group(self.data["active_group"])
 
+    def _get_script_dir(self):
+        ''' Get the directory of main.py '''
+        return os.path.abspath(__file__).strip('main.py')
+
+    def _handle_error(self, e=None, error_class=None, data=[]):
+
+        if not error_class:
+            error_class = type(e)
+
+        if error_class == FileNotFoundError:
+            self.ui.error(error=e, error_class=error_class, info=f"Could not locate file at: '{data[0]}'")
+        elif error_class == PermissionError:
+            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'\n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
+        elif error_class == GroupNotFoundError:
+            self.ui.error(error_class=error_class, info=f"No group found with id: '{data[0]}'")
+        elif error_class == TaskNotFoundError:
+            self.ui.error(error_class=error_class, info=f"No task found with id: '{data[0]}'")
+        else: # Intended for unexpected or unknown errors.
+            info = "Unexpected error occured." if not data else data[0]
+            self.ui.error(error=e, error_class=error_class, fatal=True, info=info)
+
     def create_task(self, group_id=None, subtask=False, task_kwargs={}):
         ''' Creates a Task with provided kwargs and updates data. '''
         try:
             task = Task(master=self, **task_kwargs)
         except TypeError as e:
-            self.handle_error(e=e)
+            self._handle_error(e=e)
             return
 
         self.data["tasks"][task.get_id()] = task
@@ -36,7 +57,7 @@ class Master:
             try:        
                 self.data["groups"][group_id]["task_ids"].append(task.get_id())
             except KeyError as e:
-                self.handle_error(error_class=GroupNotFoundError, data=[group_id])
+                self._handle_error(error_class=GroupNotFoundError, data=[group_id])
                 return task.get_id()
 
         return task.get_id()
@@ -52,6 +73,27 @@ class Master:
 
         self.data["tasks"][parent_task_id].add_subtask(task_id)
 
+    def init_storage_file(self):    
+        # IDs are in base 36, hence strings
+        storage = {
+            "current_id": "0",
+            "active_group": "0",
+            "groups": {"0": {"task_ids": ["0"], "name": ''}},
+            "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
+        }
+
+        with open(self.STORAGE_PATH, "w") as f:
+            f.write(json.dumps(storage, ensure_ascii=False))
+
+        with open(self.STORAGE_PATH, "r") as f:
+            written = json.loads(f.read())
+
+            if written == storage:
+                self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
+            else:
+                info = f"Expected: {storage}\nActual: {written}\nFailed to dump or read dumped file"
+                self.ui.error(info=info, fatal=True)
+
     def load_data(self):
         ''' Loads data (tasks and groups) from storage file to self.data. '''
 
@@ -63,9 +105,9 @@ class Master:
         except json.JSONDecodeError as e:
             self.ui.error(error=e, error_class=type(e), fatal=True, info=f"The stored data at '{self.STORAGE_PATH}' is CORRUPTED.")
         except (FileNotFoundError, PermissionError) as e:
-            self.handle_error(e=e, data=[self.STORAGE_PATH])
+            self._handle_error(e=e, data=[self.STORAGE_PATH])
         except Exception as e:
-            self.handle_error(e=e, data=[f"An error occured while reading data from file at '{self.STORAGE_PATH}'."])
+            self._handle_error(e=e, data=[f"An error occured while reading data from file at '{self.STORAGE_PATH}'."])
 
         if data:
             self.data = data
@@ -92,23 +134,19 @@ class Master:
             with open(self.STORAGE_PATH, mode='w') as f:
                 json.dump(data, f) # ? Is ensure_ascii=True necessary?
         except (FileNotFoundError, PermissionError) as e:
-            self.handle_error(e=e, data=[self.STORAGE_PATH])
+            self._handle_error(e=e, data=[self.STORAGE_PATH])
         except Exception as e:
-            self.handle_error(e=e, data=[f"An error occured while writing data to storage file at: '{self.STORAGE_PATH}'"])
+            self._handle_error(e=e, data=[f"An error occured while writing data to storage file at: '{self.STORAGE_PATH}'"])
 
         pass # Todo: check for write success
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
-
-    def group_name_to_group_id(group_name): # ! TODO
-        ''' Transforms group_name to group_id. '''
-        pass 
 
     def load_group(self, group_id):
         ''' Inside self.data: Converts task dicts to Task objects for tasks with matching group_id. '''        
         try:
             task_ids_list = self.data["groups"][group_id]["task_ids"]
         except KeyError:
-            self.handle_error(error_class=GroupNotFoundError, data=[group_id])
+            self._handle_error(error_class=GroupNotFoundError, data=[group_id])
             return
         
         for task_id in task_ids_list:
@@ -120,7 +158,7 @@ class Master:
             if isinstance(self.data["tasks"][task_id], Task):
                 return
         except KeyError:
-            self.handle_error(error_class=TaskNotFoundError, data=[task_id])
+            self._handle_error(error_class=TaskNotFoundError, data=[task_id])
             raise KeyError
         
         try:
@@ -133,51 +171,9 @@ class Master:
         for subtask_id in self.data["tasks"][task_id].get_subtasks():
             self.load_task(subtask_id)
 
-    def init_storage_file(self):    
-        # IDs are in base 36, hence strings
-        storage = {
-            "current_id": "0",
-            "active_group": "0",
-            "groups": {"0": {"task_ids": ["0"], "name": ''}},
-            "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
-        }
-
-        with open(self.STORAGE_PATH, "w") as f:
-            f.write(json.dumps(storage, ensure_ascii=False))
-
-        with open(self.STORAGE_PATH, "r") as f:
-            written = json.loads(f.read())
-
-            if written == storage:
-                self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
-            else:
-                info = f"Expected: {storage}\nActual: {written}\nFailed to dump or read dumped file"
-                self.ui.error(info=info, fatal=True)
-
-    def get_script_dir(self):
-        ''' Get the directory of main.py '''
-        return os.path.abspath(__file__).strip('main.py')
-
     def update_current_id(self, id):
         ''' Set current id to id. Called by Task. '''
         self.data["current_id"] = id
-
-    def handle_error(self, e=None, error_class=None, data=[]):
-
-        if not error_class:
-            error_class = type(e)
-
-        if error_class == FileNotFoundError:
-            self.ui.error(error=e, error_class=error_class, info=f"Could not locate file at: '{data[0]}'")
-        elif error_class == PermissionError:
-            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'\n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
-        elif error_class == GroupNotFoundError:
-            self.ui.error(error_class=error_class, info=f"No group found with id: '{data[0]}'")
-        elif error_class == TaskNotFoundError:
-            self.ui.error(error_class=error_class, info=f"No task found with id: '{data[0]}'")
-        else: # Intended for unexpected or unknown errors.
-            info = "Unexpected error occured." if not data else data[0]
-            self.ui.error(error=e, error_class=error_class, fatal=True, info=info)
 
 if __name__ == '__main__':
     class DevUI:
