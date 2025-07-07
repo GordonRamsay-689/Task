@@ -1,5 +1,6 @@
 import os, sys, json, copy
 from task import Task
+from id_gen import increment_id
 from globals import *
 
 # TODO: check for success on write in write_data()
@@ -13,9 +14,10 @@ def _construct_error_str(desc, msg):
     return text
 
 class GroupNotFoundError(Exception):
-    def __init__(self, group_id, e=None, msg=""):
+    def __init__(self, group_id, task_id=None, e=None, msg=""):
         self.e = e
         self.group_id = group_id
+        self.task_id = task_id
         self.msg = msg
         super().__init__(self.msg)
 
@@ -33,6 +35,7 @@ class TaskNotFoundError(Exception):
         return _construct_error_str(f"No task found with id: '{self.task_id}'", self.msg)
 
 class TaskCreationError(Exception):
+    ''' An error occured during task creation. '''
     def __init__(self, task_id, e=None, msg=""):
         self.e = e
         self.task_id = task_id
@@ -42,16 +45,30 @@ class TaskCreationError(Exception):
     def __str__(self):
         return _construct_error_str(f"Failed to create task with id: '{self.task_id}'", self.msg)
     
-class DataError(Exception):
-    def __init__(self, path, e=None, msg=""):
+class DataError(Exception): # ? On DataError, restore master.STORAGE_BACKUP 
+    ''' Data is corrupted or otherwise unexpected. '''
+    def __init__(self, path=None, task_id=None, e=None, msg=""):
         self.path = path
         self.e = e
+        self.task_id = task_id
         self.msg = msg
         super().__init__(self.msg)
 
     def __str__(self):
-        return _construct_error_str(f"An error occured while reading data from file at '{self.path}'.", self.msg)
-        
+        return _construct_error_str(f"Data is corrupt.", self.msg)
+
+class FSError(Exception):
+    ''' A filesystem error occured. '''
+    def __init__(self, path, task_id=None, e=None, msg=""):
+        self.path = path
+        self.e = e
+        self.task_id = task_id
+        self.msg = msg
+        super().__init__(self.msg)
+
+    def __str__(self):
+        return _construct_error_str(f"An error occured while accessing file at: '{self.path}'.", self.msg)
+
 class Master:
     ''' Manages I/O operations and Task objects. '''
     def __init__(self, ui):
@@ -61,8 +78,6 @@ class Master:
         self.STORAGE_PATH = os.path.join(self.SCRIPT_DIR, "storage.json")
 
         self.data = {}
-        self.load_data()
-        self.STORAGE_BACKUP = copy.deepcopy(self.data)
 
     def _get_script_dir(self):
         ''' Get the directory of main.py '''
@@ -85,13 +100,13 @@ class Master:
         ''' Creates a Task with provided kwargs and updates data. '''
         try:
             task = Task(master=self, **task_kwargs)
-        except TypeError as e:
-            raise TaskCreationError(task_id=self.data["current_id"],
-                                    msg=f"Invalid argument among kwargs passed to Task.__init__(): '{task_kwargs.keys()}'.",
-                                    e=e)
+        except (TypeError, ValueError) as e:
+            task_id = increment_id(self.data["current_id"])
+            raise TaskCreationError(task_id=task_id, e=e,
+                                    msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.")
 
         task_id = task.get_id()
-
+        
         self.data["tasks"][task_id] = task
 
         if not subtask: # Adds task to a group if not a subtask
@@ -99,10 +114,11 @@ class Master:
             
             try:
                 self.add_task_to_group(task_id, group_id)
-            except GroupNotFoundError:
-                pass
-
-        return task.get_id()
+            except GroupNotFoundError as e:
+                e.msg += f"\nTask with id '{task_id}' was created but not succesfully added to any group or given a parent task."
+                raise
+            
+        return task_id
 
     def add_task_to_group(self, task_id, group_id): 
         error_message = f"Failed to add task with id '{task_id}' to group with id '{group_id}'."
@@ -113,7 +129,7 @@ class Master:
         try:        
             self.data["groups"][group_id]["task_ids"].append(task_id)
         except KeyError as e:
-            raise GroupNotFoundError(group_id=group_id, msg=error_message, e=e)
+            raise GroupNotFoundError(group_id=group_id, task_id=task_id, msg=error_message, e=e)
 
     def create_subtask(self, parent_task_id):
         ''' Creates a Task and adds Task id to parent Task's substask set. '''
@@ -128,10 +144,8 @@ class Master:
 
         self.data["tasks"][task_id].add_parent(parent_task_id)
         self.data["tasks"][parent_task_id].add_subtask(task_id)
-              
-        return task_id
     
-    def init_storage_file(self):    
+    def init_storage_file(self):
         # IDs are in base 36, hence strings
         storage = {
             "current_id": "0",
@@ -140,8 +154,13 @@ class Master:
             "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
         }
 
-        with open(self.STORAGE_PATH, "w") as f:
-            f.write(json.dumps(storage, ensure_ascii=False))
+        try:
+            with open(self.STORAGE_PATH, "w") as f:
+                f.write(json.dumps(storage, ensure_ascii=False))
+        except FileNotFoundError as e:
+            raise FSError(e=e, path=self.STORAGE_PATH, msg="A file system error occured during creation of storage file.")
+        except PermissionError as e:
+            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to create storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
 
         with open(self.STORAGE_PATH, "r") as f:
             written = json.loads(f.read())
@@ -151,7 +170,7 @@ class Master:
             else:
                 raise DataError(path=self.STORAGE_PATH, msg=f"Expected: {storage}\nActual: {written}\n")
 
-    def load_data(self): # TODO: Error handling using new types
+    def load_data(self):
         ''' Loads data (tasks and groups) from storage file to self.data. '''
 
         data = {}
@@ -159,28 +178,30 @@ class Master:
         try:
             with open(self.STORAGE_PATH, mode='r') as f:
                 data = json.loads(f.read())
+        except FileNotFoundError as e:
+            self.ui.relay(f"Storage file at '{self.STORAGE_PATH}' not found.")
         except json.JSONDecodeError as e:
-            self.ui.error(error=e, error_class=type(e), fatal=True, info=f"The stored data at '{self.STORAGE_PATH}' is CORRUPTED.")
-        except (FileNotFoundError, PermissionError) as e:
-            self._handle_error(e=e, data=[self.STORAGE_PATH])
+            raise DataError(e=e, path=self.STORAGE_PATH, msg=f"The data in storage file could not be interpreted.")
+        except PermissionError as e:
+            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to access storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
         except Exception as e:
-            self._handle_error(e=e, data=[f"An error occured while reading data from file at '{self.STORAGE_PATH}'."])
+            raise FSError(e=e, path=self.STORAGE_PATH, msg="An unexpected error occurred while loading data.")
 
         if data:
             self.data = data
+            self.STORAGE_BACKUP = copy.deepcopy(self.data)
         else:
-            self.ui.error(info=f"No data loaded from storage at {self.STORAGE_PATH}.")
+            self.ui.relay(message=f"No data loaded from storage at: '{self.STORAGE_PATH}'.")
+            self.ui.relay(message=f"Attempting to create a new storage file...")
 
-            kwargs = {"request_type": bool, 
-                      "message": "Do you wish to create create an empty storage file?"}
-            if self.ui.request(**kwargs) == True:
+            try:
                 self.init_storage_file()
-            else:
-                self.ui.error(fatal=True, info="Cannot continue without a storage file.")
-
+            except (DataError, FSError):
+                raise
+            
             self.load_data()
 
-    def write_data(self): # TODO: Error handling using new types
+    def write_data(self): 
         ''' Writes data (tasks and groups) to storage file. '''
 
         data = copy.deepcopy(self.data)
@@ -191,10 +212,12 @@ class Master:
         try:
             with open(self.STORAGE_PATH, mode='w') as f:
                 json.dump(data, f) # ? Is ensure_ascii=True necessary?
-        except (FileNotFoundError, PermissionError) as e:
-            self._handle_error(e=e, data=[self.STORAGE_PATH])
+        except FileNotFoundError as e:
+            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No file found at: '{self.STORAGE_PATH}'")
+        except PermissionError as e:
+            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to write to storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
         except Exception as e:
-            self._handle_error(e=e, data=[f"An error occured while writing data to storage file at: '{self.STORAGE_PATH}'"])
+            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"An unexpected error occured during attempt to write data to storage file at: '{self.STORAGE_PATH}'")
 
         pass # Todo: check for write success
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
@@ -403,4 +426,16 @@ if __name__ == '__main__':
 
     master = Master(DevUI())
     
+    try:
+        master.load_data()
+    except (DataError, FSError) as e:
+        print(e)
+        sys.exit()
+
+    try:
+        master.create_task(group_id="AAA", task_kwargs="A")
+    except Exception as e:
+        print(e)
+        print(e.task_id)
+        
     master.write_data() # Dev
