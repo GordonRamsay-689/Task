@@ -98,6 +98,9 @@ class Master:
 
     def create_task(self, group_id=None, subtask=False, task_kwargs={}):
         ''' Creates a Task with provided kwargs and updates data. '''
+        if group_id and subtask:
+            raise TaskCreationError(task_id=None, e=TypeError, msg="Argument Error: A task cannot be both a subtask and part of a group.")
+
         try:
             task = Task(master=self, **task_kwargs)
         except (TypeError, ValueError) as e:
@@ -109,9 +112,7 @@ class Master:
         
         self.data["tasks"][task_id] = task
 
-        if not subtask: # Adds task to a group if not a subtask
-            group_id = self.data["active_group"] if not group_id else group_id
-            
+        if group_id:
             try:
                 self.add_task_to_group(task_id, group_id)
             except GroupNotFoundError as e:
@@ -133,7 +134,7 @@ class Master:
 
     def create_subtask(self, parent_task_id):
         ''' Creates a Task and adds Task id to parent Task's substask set. '''
-        task_id = self.create_task(subtask=True, task_kwargs={})
+        task_id = self.create_task(subtask=True)
          
         try:
             self.load_task(parent_task_id)
@@ -258,6 +259,12 @@ class Master:
         
         return task_ids
         
+    def get_active_group(self):
+        return self.data["active_group"]
+    
+    def get_current_id(self):
+        return self.data["current_id"]
+    
     def load_task(self, task_id):
         ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
         try:
@@ -426,16 +433,11 @@ if __name__ == '__main__':
 
     master = Master(DevUI())
     
+    # Dev ---------------
     try:
         master.load_data()
     except (DataError, FSError) as e:
         print(e)
         sys.exit()
-
-    try:
-        master.create_task(group_id="AAA", task_kwargs="A")
-    except Exception as e:
-        print(e)
-        print(e.task_id)
-        
-    master.write_data() # Dev
+   
+    master.write_data()
