@@ -232,6 +232,37 @@ class Master:
         except KeyError as e:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
+    def get_groups(self):
+        ''' Returns a list of group ids. '''
+        return list(self.data["groups"].keys())
+
+    def get_group_task_ids(self, group_id):
+        ''' Returns a list of task ids in group. '''
+        try:
+            task_ids = self.data["groups"][group_id]["task_ids"]
+        except KeyError as e:
+            raise GroupNotFoundError(group_id=group_id, e=e)
+        
+        return task_ids
+        
+    def get_active_group(self):
+        return self.data["active_group"]
+    
+    def get_current_id(self):
+        return self.data["current_id"]
+    
+    def get_task(self, task_id):
+        try:
+            self.load_task(task_id)
+        except TaskNotFoundError:
+            raise
+        
+        return self.data["tasks"][task_id]
+
+    def get_tasks(self):
+        ''' Returns a list of all task ids. '''
+        return list(self.data["tasks"].keys())
+
     def load_group(self, group_id):
         ''' Inside self.data: Converts task dicts to Task objects for tasks with matching group_id. '''        
         
@@ -251,20 +282,6 @@ class Master:
         if failed:
             pass # Todo: raies them all or raise one and pass along their ids
 
-    def get_group_tasks(self, group_id):
-        try:
-            task_ids = self.data["groups"][group_id]["task_ids"]
-        except KeyError as e:
-            raise GroupNotFoundError(group_id=group_id, e=e)
-        
-        return task_ids
-        
-    def get_active_group(self):
-        return self.data["active_group"]
-    
-    def get_current_id(self):
-        return self.data["current_id"]
-    
     def load_task(self, task_id):
         ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
         try:
@@ -439,5 +456,5 @@ if __name__ == '__main__':
     except (DataError, FSError) as e:
         print(e)
         sys.exit()
-   
+
     master.write_data()
