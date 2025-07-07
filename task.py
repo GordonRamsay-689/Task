@@ -30,12 +30,12 @@ class Task:
         else:
             self._comments = comments
             self._description = description
-            self._id = self.generate_task_id()
             self._resources = resources
             self._status = status
             self._subtasks = set(subtasks)
             self._parents = set(parents)
             self._title = title or self.generate_task_title()
+            self._id = self.generate_task_id() # Last, so errors happen before increment of current_id
 
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
