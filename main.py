@@ -3,71 +3,60 @@ from task import Task
 from id_gen import increment_id
 from globals import *
 
-# TODO: check for success on write in write_data()
+# TODO: ? check for success on write in write_data()
 
-def _construct_error_str(desc, msg):
-    text = f"Error: {desc}"
-    
-    if msg:
-        text += f"\nInfo: {msg}"
+class CustomException(Exception):
+    def _construct_error_str(self, desc, msg):
+        text = f"Error: {desc}"
+        
+        if msg:
+            text += f"\nInfo: {msg}"
 
-    return text
+        return text
 
-class GroupNotFoundError(Exception):
+    def __str__(self):
+        return self._construct_error_str(self.desc, self.msg)
+
+class GroupNotFoundError(CustomException):
     def __init__(self, group_id, task_id=None, e=None, msg=""):
         self.e = e
         self.group_id = group_id
         self.task_id = task_id
         self.msg = msg
-        super().__init__(self.msg)
+        self.desc = f"No group id found with id: '{self.group_id}'"
 
-    def __str__(self):
-        return _construct_error_str(f"No group id found with id: '{self.group_id}'", self.msg)
-
-class TaskNotFoundError(Exception):
+class TaskNotFoundError(CustomException):
     def __init__(self, task_id, e=None, msg=""):
         self.e = e
         self.task_id = task_id
         self.msg = msg
-        super().__init__(self.msg)
+        self.desc = f"No task found with id: '{self.task_id}'"
 
-    def __str__(self):
-        return _construct_error_str(f"No task found with id: '{self.task_id}'", self.msg)
-
-class TaskCreationError(Exception):
+class TaskCreationError(CustomException):
     ''' An error occured during task creation. '''
     def __init__(self, task_id, e=None, msg=""):
         self.e = e
         self.task_id = task_id
         self.msg = msg
-        super().__init__(self.msg)
+        self.desc = f"Failed to create task with id: '{self.task_id}'"
 
-    def __str__(self):
-        return _construct_error_str(f"Failed to create task with id: '{self.task_id}'", self.msg)
-    
-class DataError(Exception): # ? On DataError, restore master.STORAGE_BACKUP 
+class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
     ''' Data is corrupted or otherwise unexpected. '''
     def __init__(self, path=None, task_id=None, e=None, msg=""):
         self.path = path
         self.e = e
         self.task_id = task_id
         self.msg = msg
-        super().__init__(self.msg)
+        self.desc = f"Data is corrupt."
 
-    def __str__(self):
-        return _construct_error_str(f"Data is corrupt.", self.msg)
-
-class FSError(Exception):
+class FSError(CustomException):
     ''' A filesystem error occured. '''
     def __init__(self, path, task_id=None, e=None, msg=""):
         self.path = path
         self.e = e
         self.task_id = task_id
         self.msg = msg
-        super().__init__(self.msg)
-
-    def __str__(self):
-        return _construct_error_str(f"An error occured while accessing file at: '{self.path}'.", self.msg)
+        self.desc = f"An error occured while accessing file at: '{self.path}'."
 
 class Master:
     ''' Manages I/O operations and Task objects. '''
@@ -82,19 +71,6 @@ class Master:
     def _get_script_dir(self):
         ''' Get the directory of main.py '''
         return os.path.abspath(__file__).strip('main.py')
-
-    def _handle_error(self, e=None, error_class=None, data=[]): # TODO: replace with raise
-
-        if not error_class:
-            error_class = type(e)
-
-        if error_class == FileNotFoundError:
-            self.ui.error(error=e, error_class=error_class, info=f"Could not locate file at: '{data[0]}'")
-        elif error_class == PermissionError:
-            self.ui.error(error=e, error_class=error_class, info=f"No permission to access file at: '{data[0]}'\n{PROGRAM_NAME} needs read and write permissions for all files located in '{self.SCRIPT_DIR}'.")
-        else: # Intended for unexpected or unknown errors.
-            info = "Unexpected error occured." if not data else data[0]
-            self.ui.error(error=e, error_class=error_class, fatal=True, info=info)
 
     def create_task(self, group_id=None, subtask=False, task_kwargs={}):
         ''' Creates a Task with provided kwargs and updates data. '''
