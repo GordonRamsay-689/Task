@@ -3,7 +3,8 @@ from task import Task
 from id_gen import increment_id
 from globals import *
 
-# TODO: ? check for success on write in write_data()
+# ? check for success on write in write_data()
+# ? relay failure for each failed task when loading group.
 
 class CustomException(Exception):
     def _construct_error_str(self, desc, msg):
@@ -18,45 +19,50 @@ class CustomException(Exception):
         return self._construct_error_str(self.desc, self.msg)
 
 class GroupNotFoundError(CustomException):
-    def __init__(self, group_id, task_id=None, e=None, msg=""):
+    def __init__(self, group_id, e=None, msg="", task_id=None,):
         self.e = e
         self.group_id = group_id
-        self.task_id = task_id
         self.msg = msg
-        self.desc = f"No group id found with id: '{self.group_id}'"
+        self.task_id = task_id
+
+        self.desc = f"No group ID found with ID: '{self.group_id}'"
 
 class TaskNotFoundError(CustomException):
     def __init__(self, task_id, e=None, msg=""):
         self.e = e
-        self.task_id = task_id
         self.msg = msg
-        self.desc = f"No task found with id: '{self.task_id}'"
+        self.task_id = task_id
+        
+        self.desc = f"No task found with ID: '{self.task_id}'"
 
 class TaskCreationError(CustomException):
-    ''' An error occured during task creation. '''
+    ''' An error occured during Task object creation. '''
     def __init__(self, task_id, e=None, msg=""):
         self.e = e
-        self.task_id = task_id
         self.msg = msg
-        self.desc = f"Failed to create task with id: '{self.task_id}'"
+        self.task_id = task_id
+
+        self.desc = f"Failed to create task with ID: '{self.task_id}'"
 
 class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
     ''' Data is corrupted or otherwise unexpected. '''
-    def __init__(self, path=None, task_id=None, e=None, msg=""):
-        self.path = path
+    def __init__(self, e=None, msg="", path=None, task_id=None):
         self.e = e
-        self.task_id = task_id
         self.msg = msg
+        self.path = path
+        self.task_id = task_id
+
         self.desc = f"Data is corrupt."
 
 class FSError(CustomException):
     ''' A filesystem error occured. '''
-    def __init__(self, path, task_id=None, e=None, msg=""):
-        self.path = path
+    def __init__(self, path, e=None, msg="", task_id=None):
         self.e = e
-        self.task_id = task_id
         self.msg = msg
-        self.desc = f"An error occured while accessing file at: '{self.path}'."
+        self.task_id = task_id
+        self.path = path
+
+        self.desc = f"An error occured while trying to access: '{self.path}'."
 
 class Master:
     ''' Manages I/O operations and Task objects. '''
@@ -69,63 +75,78 @@ class Master:
         self.data = {}
 
     def _get_script_dir(self):
-        ''' Get the directory of main.py '''
-        return os.path.abspath(__file__).strip('main.py')
+        ''' Get the directory of the file that Master object is created from. '''
+        dirname, _ = os.path.split(__file__)
+        return os.path.abspath(dirname)
 
     def create_task(self, group_id=None, subtask=False, task_kwargs={}):
-        ''' Creates a Task with provided kwargs and updates data. '''
+        ''' Creates a Task object with args in task_kwargs and returns task ID on success. '''
         if group_id and subtask:
-            raise TaskCreationError(task_id=None, e=TypeError, msg="Argument Error: A task cannot be both a subtask and part of a group.")
+            raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
+                                    e=TypeError, 
+                                    msg="Argument Error: A task cannot be both a subtask and part of a group.")
 
         try:
             task = Task(master=self, **task_kwargs)
         except (TypeError, ValueError) as e:
-            task_id = increment_id(self.data["current_id"])
-            raise TaskCreationError(task_id=task_id, e=e,
+            raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
+                                    e=e,
                                     msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.")
 
         task_id = task.get_id()
-        
         self.data["tasks"][task_id] = task
 
         if group_id:
             try:
                 self.add_task_to_group(task_id, group_id)
             except GroupNotFoundError as e:
-                e.msg += f"\nTask with id '{task_id}' was created but not succesfully added to any group or given a parent task."
+                e.msg += f"\nTask with ID '{task_id}' was created but not succesfully added to any group."
                 raise
             
         return task_id
 
     def add_task_to_group(self, task_id, group_id): 
-        error_message = f"Failed to add task with id '{task_id}' to group with id '{group_id}'."
+        ''' Adds a task ID to a group. '''
+        error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
 
         if not task_id in self.data["tasks"]:
-            raise TaskNotFoundError(task_id=task_id, msg=error_message)
+            raise TaskNotFoundError(task_id=task_id, 
+                                    msg=error_message)
         
         try:        
             self.data["groups"][group_id]["task_ids"].append(task_id)
         except KeyError as e:
-            raise GroupNotFoundError(group_id=group_id, task_id=task_id, msg=error_message, e=e)
+            raise GroupNotFoundError(group_id=group_id, 
+                                     task_id=task_id, 
+                                     msg=error_message, 
+                                     e=e)
 
-    def create_subtask(self, parent_task_id):
-        ''' Creates a Task and adds Task id to parent Task's substask set. '''
-        task_id = self.create_task(subtask=True)
-         
+    def create_subtask(self, parent_task_id, task_kwargs={}):
+        ''' Creates a Task object and adds task ID to subtask 
+        attribute of Task object with ID parent_task_id. 
+        
+        Returns task ID on completion.
+        '''
+        try:
+            task_id = self.create_task(subtask=True, task_kwargs=task_kwargs)
+        except TaskCreationError:
+            raise
+
         try:
             self.load_task(parent_task_id)
         except TaskNotFoundError as e:
-            e.msg = f"Could not make task with id '{task_id}' a subtask of task with id '{parent_task_id}'. Removing task with id '{task_id}'."
-            self.remove_task(task_id)            
+            e.msg = f"Could not assign task with ID '{task_id}' a subtask of task with ID '{parent_task_id}'.\nAttempting to remove task with ID: '{task_id}'."
+            self.remove_task(task_id) # ? Try?           
             raise
 
         self.data["tasks"][task_id].add_parent(parent_task_id)
         self.data["tasks"][parent_task_id].add_subtask(task_id)
+
+        return task_id
     
     def init_storage_file(self):
-        # IDs are in base 36, hence strings
         storage = {
-            "current_id": "0",
+            "current_id": "0", # IDs are in base 36, hence strings
             "active_group": "0",
             "groups": {"0": {"task_ids": ["0"], "name": ''}},
             "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
@@ -140,15 +161,20 @@ class Master:
             raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to create storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
 
         with open(self.STORAGE_PATH, "r") as f:
-            written = json.loads(f.read())
+            try:
+                written = json.loads(f.read())
+            except json.JSONDecodeError as e:
+                raise DataError(path=self.STORAGE_PATH, 
+                                msg="An error occured while creating storage file.",
+                                e=e)
 
             if written == storage:
                 self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
             else:
-                raise DataError(path=self.STORAGE_PATH, msg=f"Expected: {storage}\nActual: {written}\n")
+                raise DataError(path=self.STORAGE_PATH, msg=f"Expected: {storage}\nActual: {written}")
 
     def load_data(self):
-        ''' Loads data (tasks and groups) from storage file to self.data. '''
+        ''' Loads from storage file to self.data. '''
 
         data = {}
 
@@ -158,7 +184,7 @@ class Master:
         except FileNotFoundError as e:
             self.ui.relay(f"Storage file at '{self.STORAGE_PATH}' not found.")
         except json.JSONDecodeError as e:
-            raise DataError(e=e, path=self.STORAGE_PATH, msg=f"The data in storage file could not be interpreted.")
+            raise DataError(e=e, path=self.STORAGE_PATH, msg="The data in storage file could not be interpreted.")
         except PermissionError as e:
             raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to access storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
         except Exception as e:
@@ -168,18 +194,21 @@ class Master:
             self.data = data
             self.STORAGE_BACKUP = copy.deepcopy(self.data)
         else:
-            self.ui.relay(message=f"No data loaded from storage at: '{self.STORAGE_PATH}'.")
-            self.ui.relay(message=f"Attempting to create a new storage file...")
+            self.ui.relay(message=f"No data loaded from storage file at: '{self.STORAGE_PATH}'.")
+            self.ui.relay(message="Attempting to create a new storage file...")
 
             try:
                 self.init_storage_file()
             except (DataError, FSError):
                 raise
             
-            self.load_data()
+            try:
+                self.load_data()
+            except:
+                raise
 
     def write_data(self): 
-        ''' Writes data (tasks and groups) to storage file. '''
+        ''' Writes self.data to storage file. '''
 
         data = copy.deepcopy(self.data)
         for task_id, task in self.data["tasks"].items():
@@ -200,6 +229,7 @@ class Master:
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
 
     def _is_Task(self, task_id):
+        ''' Confirms if task ID is a Task object. '''
         try:
             if isinstance(self.data["tasks"][task_id], Task):
                 return True
@@ -209,11 +239,11 @@ class Master:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
     def get_groups(self):
-        ''' Returns a list of group ids. '''
+        ''' Returns a list of group IDs. '''
         return list(self.data["groups"].keys())
 
     def get_group_task_ids(self, group_id):
-        ''' Returns a list of task ids in group. '''
+        ''' Returns a list of task IDs in group. '''
         try:
             task_ids = self.data["groups"][group_id]["task_ids"]
         except KeyError as e:
@@ -228,6 +258,7 @@ class Master:
         return self.data["current_id"]
     
     def get_task(self, task_id):
+        ''' Loads and returns Task object with ID task_id. '''
         try:
             self.load_task(task_id)
         except TaskNotFoundError:
@@ -236,30 +267,29 @@ class Master:
         return self.data["tasks"][task_id]
 
     def get_tasks(self):
-        ''' Returns a list of all task ids. '''
+        ''' Returns a list of all task IDs. '''
         return list(self.data["tasks"].keys())
 
     def load_group(self, group_id):
-        ''' Inside self.data: Converts task dicts to Task objects for tasks with matching group_id. '''        
+        ''' Converts task dicts to Task objects for tasks in group with ID group_id. '''        
         
         try:
             task_ids = self.get_group_tasks(group_id)
         except GroupNotFoundError:
             raise
 
-        failed = []
         for task_id in task_ids:
             try:
                 self.load_task(task_id)
             except TaskNotFoundError as e:
-                failed.append(e)
+                self.remove_task_from_group(task_id, group_id)
                 continue
-        
-        if failed:
-            pass # Todo: raies them all or raise one and pass along their ids
 
     def load_task(self, task_id):
-        ''' Inside self.data: Converts task dict to Task object for task with matching task_id. '''
+        ''' Converts task dict to Task object for task with ID task_id. 
+        
+        Recursively loads parent and subtasks.
+        '''
         try:
             if self._is_Task(task_id):
                 return
@@ -283,8 +313,8 @@ class Master:
                 raise 
 
     def remove_task(self, task_id):
-        ''' 
-        Removes a task and all of it's subtasks recursively from data["tasks"]. Deletes task from groups and parents' subtasks lists. 
+        ''' Removes a task from all groups, orphans the task 
+        and recursively removes all of its subtaskts.
         '''
 
         for group_id in self.data["groups"].keys():
@@ -311,8 +341,12 @@ class Master:
         self.data["tasks"].pop(task_id)
 
     def _deep_remove_task(self, task_id):
-        ''' Goes through all tasks attempting to remove task_id from any substasks and parents lists. If a subtask is found, 
-        performs the same operation for it recursively. '''
+        ''' Goes through all tasks attempting to remove task with ID task_id
+        from any substasks and parents lists. Recursively performs the same 
+        operation for any subtasks found.
+         
+        This is a slow operation, prefer self.remove_task(). 
+        '''
         for _task_id, task in self.data["tasks"].items():
             
             if not _task_id in self.data["tasks"].keys(): # ! If a subtask has been removed in a deeper recursion layer
@@ -346,7 +380,7 @@ class Master:
             pass
 
     def orphan_task(self, task_id):
-        ''' Removes a task from all parents' subtask lists. '''
+        ''' Removes a task from all parents' subtask attribute. '''
         try:
             self.load_task(task_id)
         except TaskNotFoundError:
@@ -365,7 +399,7 @@ class Master:
             return
 
     def update_current_id(self, id):
-        ''' Set current id to id. Called by Task. '''
+        ''' Set current ID to id. '''
         self.data["current_id"] = id
 
 if __name__ == '__main__':
@@ -402,7 +436,7 @@ if __name__ == '__main__':
                     u_in = prompt_user("> ")
                 return int(u_in)
 
-        def error(self, error='', error_class=None, info='', fatal=False):
+        def error(self, error='', error_class=None, info='', fatal=False): # ! Currently unused.
             ''' Provides information about an error. 
             
             If fatal=True the error is so severe that the program cannot continue.
