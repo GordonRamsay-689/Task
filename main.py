@@ -285,7 +285,7 @@ class Master:
             
             try:
                 self.load_data()
-            except:
+            except (FSError, DataError):
                 raise
 
     def load_group(self, group_id):
