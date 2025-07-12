@@ -129,7 +129,7 @@ class Master:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
     def add_task_to_group(self, task_id, group_id): 
-        ''' Adds a task ID to a group. '''
+        ''' Adds an existing task ID to a group. '''
         error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
 
         if not task_id in self.data["tasks"]:
