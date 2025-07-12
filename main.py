@@ -159,7 +159,7 @@ class Master:
             self.load_task(parent_task_id)
         except TaskNotFoundError as e:
             e.msg = f"Could not assign task with ID '{task_id}' a subtask of task with ID '{parent_task_id}'.\nAttempting to remove task with ID: '{task_id}'."
-            self.remove_task(task_id) # ? Try?           
+            self.remove_task(task_id)        
             raise
 
         self.data["tasks"][task_id].add_parent(parent_task_id)
