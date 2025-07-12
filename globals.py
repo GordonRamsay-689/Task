@@ -68,5 +68,10 @@ TASKD_TEMPLATE = {
     TSK_TITLE: ""
 }
 
+GROUP_TEMPLATE = {
+    "task_ids": [], 
+    "title": ""
+    }
+
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'

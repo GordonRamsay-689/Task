@@ -226,13 +226,15 @@ class Master:
         return list(self.data["tasks"].keys())
 
     def init_storage_file(self):
+        group = copy.deepcopy(GROUP_TEMPLATE)
+        group["title"] = "General"
+
         storage = {
             "current_id": "0", # IDs are in base 36, hence strings
             "active_group": "0",
-            "groups": {"0": {"task_ids": ["0"], "name": ''}},
-            "tasks": {"0": copy.deepcopy(TASKD_TEMPLATE)} 
+            "groups": {"0": group},
+            "tasks": {} 
         }
-
         try:
             with open(self.STORAGE_PATH, "w") as f:
                 f.write(json.dumps(storage, ensure_ascii=False))
