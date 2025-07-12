@@ -12,7 +12,7 @@ class Task:
     Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
     as the data types are not complex. """
 
-    def __init__(self, master, task_id="0", taskd=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
+    def __init__(self, master, task_id=None, taskd=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
         will be ignored.
@@ -25,6 +25,9 @@ class Task:
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
         if taskd:
+            if not task_id:
+                raise TypeError("No task ID provided. A task ID must be provided along with a task dictionary if a task dictionary is provided.")
+            
             self._id = task_id
             self._load_dict(taskd)
         else:
@@ -150,13 +153,16 @@ class Task:
 
             indentation = max(len(title) for title in section_title) + 2  # + 2 represent ': '
             
+            # Subtasks
             if section_title[3]:
                 t += f"\t{section_title[3]}: {' ' * pad}{len(self._subtasks)}\n"
 
+            # Comments
             if section_title[0]:
                 pad = self._get_pad(0, indentation, section_title)
                 t += f"\t{section_title[0]}: {' ' * pad}{self._comments}\n"
 
+            # Resources
             if section_title[2]:
                 n = len(self._resources)
                 pad = self._get_pad(2, indentation, section_title)

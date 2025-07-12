@@ -314,7 +314,9 @@ class Master:
         except TaskNotFoundError:
             raise
 
-        task = Task(self, taskd=self.data["tasks"][task_id])
+        task = Task(self, 
+                    task_id=task_id, 
+                    taskd=self.data["tasks"][task_id])
 
         self.data["tasks"][task_id] = task
         
@@ -466,5 +468,5 @@ if __name__ == '__main__':
     except (DataError, FSError) as e:
         print(e)
         sys.exit()
-
+        
     master.write_data()
