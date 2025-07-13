@@ -301,7 +301,7 @@ class Master:
         for task_id in task_ids:
             try:
                 self.load_task(task_id)
-            except TaskNotFoundError as e:
+            except TaskNotFoundError:
                 self.remove_task_from_group(task_id, group_id)
                 continue
 
