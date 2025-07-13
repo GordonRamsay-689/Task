@@ -157,7 +157,7 @@ class Master:
     def get_current_id(self):
         return self.data["current_id"]
 
-    def get_group_task_ids(self, group_id):
+    def get_group_tasks(self, group_id):
         ''' Returns a list of task IDs in group. 
         
         Raises:
