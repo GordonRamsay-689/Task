@@ -16,7 +16,7 @@ class Master:
 
         self.data = {}
 
-    def _deep_remove_task(self, task_id):
+    def _deep_remove_task(self, task_id): # ! Broken
         ''' Goes through all tasks attempting to remove task with ID task_id
         from any substasks and parents lists. Recursively performs the same 
         operation for any subtasks found.
@@ -134,10 +134,12 @@ class Master:
 
         try:
             task = Task(master=self, **task_kwargs)
-        except (TypeError, ValueError) as e:
+        except TypeError as e:
             raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
                                     e=e,
-                                    msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.")
+                                    msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.:\nDescription: {e}")
+        except ValueError as e: # ? Relic?
+            raise TaskCreationError()
 
         task_id = task.get_id()
         self.data["tasks"][task_id] = task
@@ -310,7 +312,7 @@ class Master:
         for parent_id in self.data["tasks"][task_id].get_parents():
             self.data["tasks"][parent_id].remove_subtask(task_id)
 
-    def remove_task(self, task_id):
+    def remove_task(self, task_id): # ! Breaks if unable to load a parent task.
         ''' Removes a task from all groups, orphans the task 
         and recursively removes all of its subtaskts.
 
@@ -325,7 +327,7 @@ class Master:
             self.load_task(task_id)
         except TaskNotFoundError:
             try:
-                self._deep_remove_task(task_id) # A slower method of removal.
+                self._deep_remove_task(task_id) # A slower method of removal. # ! Broken
             except:
                 pass
             

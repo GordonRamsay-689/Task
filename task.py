@@ -2,6 +2,8 @@ import copy
 from id_gen import generate_id
 from globals import *
 
+# Todo: merge validation functions with equal factors
+
 class Task:
     """ While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
     When updating a task only the object attributes are updated, until updated data is commited. 
@@ -14,23 +16,27 @@ class Task:
 
     def __init__(self, master, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
-        or with provided parameters if argument task_dict is not provided. If taskd is provided all other arguments
-        will be ignored.
+        or with provided parameters if argument task_dict is not provided. If taskd is provided all other keyword 
+        arguments will be ignored.
 
-        If no task_dict and no title is provided a title will be generated.
+        If taskd is provided a task_id must also be provided
+
+        If no taskd and no title is provided a title will be generated.
         '''
 
         self.master = master
 
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
+        self._validate_args(taskd=taskd, task_id=task_id, status=status, title=title, subtasks=subtasks, parents=parents, comments=comments, description=description, resources=resources)
+
+
         if taskd:
-            if not task_id:
-                raise TypeError("No task ID provided. A task ID must be provided along with a task dictionary if a task dictionary is provided.")
-            
             self._id = task_id
             self._load_dict(taskd)
         else:
+            # Todo: Type check each argument, throw TypeError if incorrect. 
+
             self._comments = comments
             self._description = description
             self._resources = resources
@@ -60,20 +66,114 @@ class Task:
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
         
-        try:
-            self._comments = taskd[TSK_COMMENTS]
-            self._description = taskd[TSK_DESCRIPTION]
-            self._resources = taskd[TSK_RESOURCES]
-            self._status = taskd[TSK_STATUS]
-            self._subtasks = set(taskd[TSK_SUBTASKS])
-            self._parents = set(taskd[TSK_PARENTS])
-            self._title = taskd[TSK_TITLE]
-        except KeyError as e:
-            self.master.ui.error(error=e, error_class=type(e), info=f"Failed to load task with the following data: {taskd}\nData may be corrupted.")
-            raise e 
+        self._comments = taskd[TSK_COMMENTS]
+        self._description = taskd[TSK_DESCRIPTION]
+        self._resources = taskd[TSK_RESOURCES]
+        self._status = taskd[TSK_STATUS]
+        self._subtasks = set(taskd[TSK_SUBTASKS])
+        self._parents = set(taskd[TSK_PARENTS])
+        self._title = taskd[TSK_TITLE]
         
         self._taskd = taskd
 
+    def _validate_args(self, taskd, task_id, status, title, subtasks, parents, comments, description, resources):
+        ''' Validates provided arguments (including data in taskd, if provided). 
+        
+        Raises:
+            TypeError
+            DataError
+        '''
+        if taskd:
+            self._validate_id(task_id)
+
+            if not isinstance(taskd, dict):
+                raise TypeError("'taskd' is not of type dict.")
+            
+            if taskd.keys() != copy.deepcopy(TASKD_TEMPLATE).keys():
+                raise TypeError(f"Provided 'taskd' does not follow the expected structure of a task dictionary.\nIf this dictionary was loaded this indicates that data may have been corrupted.")
+
+            comments = taskd[TSK_COMMENTS]
+            description = taskd[TSK_DESCRIPTION]
+            resources = taskd[TSK_RESOURCES]
+            status = taskd[TSK_STATUS]
+            subtasks = taskd[TSK_SUBTASKS]
+            parents = taskd[TSK_PARENTS]
+            title = taskd[TSK_TITLE]
+
+        self._validate_comments(comments)
+        self._validate_description(description)
+        self._validate_resources(resources)
+        self._validate_status(status)
+        self._validate_subtasks(subtasks)
+        self._validate_parents(parents)
+        self._validate_title(title)
+
+    def _validate_comment(self, comment):
+        if not isinstance(comment, str):
+            raise TypeError("Comments is not of type str.")
+        
+    def _validate_comments(self, comments):
+        if not isinstance(comments, list):
+            raise TypeError("'comments' is not a list of str or an empty list.")
+        
+        for comment in comments:
+            try:
+                self._validate_comment(comment)
+            except TypeError as e:
+                raise TypeError("One of the comments in 'comments' is not of type str.") from e
+
+    def _validate_description(self, description):
+        if not isinstance(description, str):
+            raise TypeError("'description' is not of type str.")
+        
+    def _validate_id(self, task_id):
+        try:
+            int(task_id, 36)
+        except (TypeError, ValueError) as e:
+            raise TypeError(f"Invalid task ID. Not a base-36 string.") from e
+
+    def _validate_parents(self, parents):
+        if not isinstance(parents, list):
+            raise TypeError("'parents' is not a list of task IDs or an empty list.")
+        
+        for parent_id in parents:
+            try:
+                self._validate_id(parent_id)
+            except TypeError as e:
+                raise TypeError("One of the parent IDs in 'parents' is not a valid task ID.") from e
+
+    def _validate_resource(self, resource):
+        if not isinstance(resource, str):
+            raise TypeError("'resource' is not of type str.")
+
+    def _validate_resources(self, resources):
+        if not isinstance(resources, list):
+            raise TypeError("'resources' is not a list of str or an empty list.")
+        
+        for resource in resources:
+            try:
+                self._validate_resource(resource)
+            except TypeError as e:
+                raise TypeError("One of the resources in 'resources' is not of type str.") from e
+        
+    def _validate_status(self, status):
+        if not isinstance(status, bool):
+            raise TypeError("'status' is not of type bool.")
+        
+    def _validate_subtasks(self, subtasks): # !
+        if not isinstance(subtasks, list):
+            raise TypeError("'subtasks' is not a list of task IDs or an empty list.")
+        
+        for subtask_id in subtasks:
+            try:
+                self._validate_id(subtask_id)
+            except TypeError as e:
+                raise TypeError("One of the substask IDs in 'substasks' is not a valid task ID.") from e
+
+    def _validate_title(self, title):
+        if not isinstance(title, str):
+            raise TypeError("'title' is not of type str.")
+        
     def add_parent(self, parent_id):
         self._parents.add(parent_id)
 
@@ -117,7 +217,10 @@ class Task:
 
     def get_status(self):
         return self._status
-
+    
+    def get_status_symbol(self):
+        return COMPLETED_SYMBOL if self.get_status() else UNCOMPLETED_SYMBOL
+    
     def get_subtasks(self):
         return list(self._subtasks)
 
