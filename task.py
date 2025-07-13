@@ -201,6 +201,14 @@ class Task:
     def get_title(self):
         return self._title
 
+    def set_status(self, value):
+        self._validate_status(value)
+
+        self._status = value
+
+    def toggle_status(self):
+        self._status = not self._status
+
     def summarize(self):
         # todo: reformat as single and multiple based on variable type. 
         # todo: Need to dynamically get section_title.
