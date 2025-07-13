@@ -3,15 +3,6 @@ from id_gen import generate_id
 from globals import *
 
 class Task:
-    """ While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
-    When updating a task only the object attributes are updated, until updated data is commited. 
-
-    For example deleting a task by title after that title has been changed from what it was upon import will 
-    delete the task from .JSON using its Task.id. The id can never be changed under any circumstance.
-    
-    Using decorators or functions to set attribute values. getting them is not really necessary to enforce a getter
-    as the data types are not complex. """
-
     def __init__(self, master, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other keyword 
