@@ -134,12 +134,10 @@ class Master:
 
         try:
             task = Task(master=self, **task_kwargs)
-        except TypeError as e:
+        except (TypeError, ValueError) as e:
             raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
                                     e=e,
                                     msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.:\nDescription: {e}")
-        except ValueError as e: # ? Relic?
-            raise TaskCreationError()
 
         task_id = task.get_id()
         self.data["tasks"][task_id] = task

@@ -19,13 +19,10 @@ class Task:
 
         self._validate_args(taskd=taskd, task_id=task_id, status=status, title=title, subtasks=subtasks, parents=parents, comments=comments, description=description, resources=resources)
 
-
         if taskd:
             self._id = task_id
             self._load_dict(taskd)
         else:
-            # Todo: Type check each argument, throw TypeError if incorrect. 
-
             self._comments = comments
             self._description = description
             self._resources = resources
@@ -70,7 +67,7 @@ class Task:
         
         Raises:
             TypeError
-            DataError
+            ValueError
         '''
         if taskd:
             self._validate_id(task_id)
@@ -97,6 +94,10 @@ class Task:
         self._validate_parents(parents)
         self._validate_title(title)
 
+    def _validate_base_length(self, object, length, name):
+        if len(object) > length:
+            raise ValueError(f"Lenght of '{name}' exceeds maximum of {length}.") ## Not very helpful
+
     def _validate_base_list(self, lst, fn, name, item_type=None):
         self._validate_base_object(lst, list, name)
 
@@ -110,19 +111,26 @@ class Task:
                     msg = f"One of the items in '{name}' is not of type {item_type}."
                 
                 raise TypeError(msg) from e
+            except ValueError as e:
+                raise TypeError(f"One of the itmes in '{name}' exceeds maximum length.") from e
 
-    def _validate_base_object(self, object, type, name):
+    def _validate_base_object(self, object, type, name, length=None):
         if not isinstance(object, type):
             raise TypeError(f"'{name}' is not of type {type}.")
+        
+        if length:
+            self._validate_base_length(object, length, name)
 
     def _validate_comment(self, comment):
-        self._validate_base_object(comment, str, "comment")
+        self._validate_base_object(comment, str, "comment", length=MAX_COMMENT_LEN)
         
     def _validate_comments(self, comments):
         self._validate_base_list(comments, self._validate_comment, 'comments', item_type=str)
+        
+        self._validate_base_length(comments, MAX_COMMENTS, "comments")
 
     def _validate_description(self, description):
-        self._validate_base_object(description, str, "description")
+        self._validate_base_object(description, str, "description", length=MAX_DESCRIPTION_LEN)
         
     def _validate_id(self, task_id):
         try:
@@ -134,10 +142,11 @@ class Task:
         self._validate_base_list(parents, self._validate_id, 'parents')
 
     def _validate_resource(self, resource):
-        self._validate_base_object(resource, str, "resource")
+        self._validate_base_object(resource, str, "resource", length=MAX_RESOURCE_LEN)
 
     def _validate_resources(self, resources):
         self._validate_base_list(resources, self._validate_resource, 'resources', item_type=str)
+        self._validate_base_length(resources, MAX_RESOURCES, 'resources')
         
     def _validate_status(self, status):
         self._validate_base_object(status, bool, "status")
@@ -146,7 +155,7 @@ class Task:
         self._validate_base_list(subtasks, self._validate_id, 'subtasks')
 
     def _validate_title(self, title):
-        self._validate_base_object(title, str, "title")
+        self._validate_base_object(title, str, "title", length=MAX_TITLE_LENGTH)
 
     def add_parent(self, parent_id):
         self._parents.add(parent_id)
