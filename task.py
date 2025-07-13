@@ -2,8 +2,6 @@ import copy
 from id_gen import generate_id
 from globals import *
 
-# Todo: merge validation functions with equal factors
-
 class Task:
     """ While the task object is in use the self._taskd dict is not updated. this exists only for internal access.
     When updating a task only the object attributes are updated, until updated data is commited. 
@@ -108,23 +106,32 @@ class Task:
         self._validate_parents(parents)
         self._validate_title(title)
 
+    def _validate_base_list(self, lst, fn, name, item_type=None):
+        self._validate_base_object(lst, list, name)
+
+        for item in lst:
+            try:
+                fn(item)
+            except TypeError as e:
+                if fn == self._validate_id:
+                    msg = f"One of the IDs in '{name}' is not a valid task ID."
+                else:
+                    msg = f"One of the items in '{name}' is not of type {item_type}."
+                
+                raise TypeError(msg) from e
+
+    def _validate_base_object(self, object, type, name):
+        if not isinstance(object, type):
+            raise TypeError(f"'{name}' is not of type {type}.")
+
     def _validate_comment(self, comment):
-        if not isinstance(comment, str):
-            raise TypeError("Comments is not of type str.")
+        self._validate_base_object(comment, str, "comment")
         
     def _validate_comments(self, comments):
-        if not isinstance(comments, list):
-            raise TypeError("'comments' is not a list of str or an empty list.")
-        
-        for comment in comments:
-            try:
-                self._validate_comment(comment)
-            except TypeError as e:
-                raise TypeError("One of the comments in 'comments' is not of type str.") from e
+        self._validate_base_list(comments, self._validate_comment, 'comments', item_type=str)
 
     def _validate_description(self, description):
-        if not isinstance(description, str):
-            raise TypeError("'description' is not of type str.")
+        self._validate_base_object(description, str, "description")
         
     def _validate_id(self, task_id):
         try:
@@ -133,47 +140,23 @@ class Task:
             raise TypeError(f"Invalid task ID. Not a base-36 string.") from e
 
     def _validate_parents(self, parents):
-        if not isinstance(parents, list):
-            raise TypeError("'parents' is not a list of task IDs or an empty list.")
-        
-        for parent_id in parents:
-            try:
-                self._validate_id(parent_id)
-            except TypeError as e:
-                raise TypeError("One of the parent IDs in 'parents' is not a valid task ID.") from e
+        self._validate_base_list(parents, self._validate_id, 'parents')
 
     def _validate_resource(self, resource):
-        if not isinstance(resource, str):
-            raise TypeError("'resource' is not of type str.")
+        self._validate_base_object(resource, str, "resource")
 
     def _validate_resources(self, resources):
-        if not isinstance(resources, list):
-            raise TypeError("'resources' is not a list of str or an empty list.")
-        
-        for resource in resources:
-            try:
-                self._validate_resource(resource)
-            except TypeError as e:
-                raise TypeError("One of the resources in 'resources' is not of type str.") from e
+        self._validate_base_list(resources, self._validate_resource, 'resources', item_type=str)
         
     def _validate_status(self, status):
-        if not isinstance(status, bool):
-            raise TypeError("'status' is not of type bool.")
-        
-    def _validate_subtasks(self, subtasks): # !
-        if not isinstance(subtasks, list):
-            raise TypeError("'subtasks' is not a list of task IDs or an empty list.")
-        
-        for subtask_id in subtasks:
-            try:
-                self._validate_id(subtask_id)
-            except TypeError as e:
-                raise TypeError("One of the substask IDs in 'substasks' is not a valid task ID.") from e
+        self._validate_base_object(status, bool, "status")
+
+    def _validate_subtasks(self, subtasks):
+        self._validate_base_list(subtasks, self._validate_id, 'subtasks')
 
     def _validate_title(self, title):
-        if not isinstance(title, str):
-            raise TypeError("'title' is not of type str.")
-        
+        self._validate_base_object(title, str, "title")
+
     def add_parent(self, parent_id):
         self._parents.add(parent_id)
 
