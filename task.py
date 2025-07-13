@@ -40,51 +40,6 @@ class Task:
             self._title = title or self.generate_task_title()
             self._id = self.generate_task_id() # Last, so errors happen before increment of current_id
 
-    def _load_dict(self, taskd):
-        ''' Loads an existing dictionary into Task. '''
-        
-        try:
-            self._comments = taskd[TSK_COMMENTS]
-            self._description = taskd[TSK_DESCRIPTION]
-            self._resources = taskd[TSK_RESOURCES]
-            self._status = taskd[TSK_STATUS]
-            self._subtasks = set(taskd[TSK_SUBTASKS])
-            self._parents = set(taskd[TSK_PARENTS])
-            self._title = taskd[TSK_TITLE]
-        except KeyError as e:
-            self.master.ui.error(error=e, error_class=type(e), info=f"Failed to load task with the following data: {taskd}\nData may be corrupted.")
-            raise e 
-        
-        self._taskd = taskd
-    
-    def add_subtask(self, subtask_id):
-        self._subtasks.add(subtask_id)
-
-    def remove_subtask(self, subtask_id):
-        self._subtasks.remove(subtask_id)
-
-    def add_parent(self, parent_id):
-        self._parents.add(parent_id)
-
-    def remove_parent(self, parent_id):
-        self._parents.remove(parent_id)
-
-    def write_dict(self):
-        ''' Updates the self._taskd dictionary and returns it.
-
-        Example usage: Writing a task to JSON
-        '''
-
-        self._taskd[TSK_COMMENTS] = self._comments
-        self._taskd[TSK_DESCRIPTION] = self._description
-        self._taskd[TSK_RESOURCES] = self._resources
-        self._taskd[TSK_STATUS] = self._status
-        self._taskd[TSK_SUBTASKS] = list(self._subtasks)
-        self._taskd[TSK_PARENTS] = list(self._parents)
-        self._taskd[TSK_TITLE] = self._title
-        
-        return self._taskd
-        
     def __str__(self):
         return self._get_header_str()
 
@@ -102,6 +57,49 @@ class Task:
     def _get_pad(self, i, indent, section_title):
         return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
 
+    def _load_dict(self, taskd):
+        ''' Loads an existing dictionary into Task. '''
+        
+        try:
+            self._comments = taskd[TSK_COMMENTS]
+            self._description = taskd[TSK_DESCRIPTION]
+            self._resources = taskd[TSK_RESOURCES]
+            self._status = taskd[TSK_STATUS]
+            self._subtasks = set(taskd[TSK_SUBTASKS])
+            self._parents = set(taskd[TSK_PARENTS])
+            self._title = taskd[TSK_TITLE]
+        except KeyError as e:
+            self.master.ui.error(error=e, error_class=type(e), info=f"Failed to load task with the following data: {taskd}\nData may be corrupted.")
+            raise e 
+        
+        self._taskd = taskd
+
+    def add_parent(self, parent_id):
+        self._parents.add(parent_id)
+
+    def add_subtask(self, subtask_id):
+        self._subtasks.add(subtask_id)
+
+    def remove_parent(self, parent_id):
+        try:
+            self._parents.remove(parent_id)
+        except KeyError:
+            pass
+
+    def remove_subtask(self, subtask_id):
+        try:
+            self._subtasks.remove(subtask_id)
+        except KeyError:
+            pass
+
+    def generate_task_id(self):
+        id = generate_id(self.master.data["current_id"])
+        self.master.update_current_id(id)
+        return id
+
+    def generate_task_title(self): # Todo
+        return "Untitled"
+
     def get_comments(self):
         return self._comments
 
@@ -110,6 +108,9 @@ class Task:
 
     def get_id(self):
         return self._id
+
+    def get_parents(self):
+        return list(self._parents)
 
     def get_resources(self):
         return self._resources
@@ -120,20 +121,9 @@ class Task:
     def get_subtasks(self):
         return list(self._subtasks)
 
-    def get_parents(self):
-        return list(self._parents)
-
     def get_title(self):
         return self._title
 
-    def generate_task_id(self):
-        id = generate_id(self.master.data["current_id"])
-        self.master.update_current_id(id)
-        return id
-
-    def generate_task_title(self): # Todo
-        return "Untitled"
-    
     def summarize(self):
         # todo: reformat as single and multiple based on variable type. 
         # todo: Need to dynamically get section_title.
@@ -183,3 +173,19 @@ class Task:
                     t += f"\t{' ' * indentation}{n - MAX_RESOURCES_TO_DISPLAY} more resources.\n"
 
         return t
+
+    def write_dict(self):
+        ''' Updates the self._taskd dictionary and returns it.
+
+        Example usage: Writing a task to JSON
+        '''
+
+        self._taskd[TSK_COMMENTS] = self._comments
+        self._taskd[TSK_DESCRIPTION] = self._description
+        self._taskd[TSK_RESOURCES] = self._resources
+        self._taskd[TSK_STATUS] = self._status
+        self._taskd[TSK_SUBTASKS] = list(self._subtasks)
+        self._taskd[TSK_PARENTS] = list(self._parents)
+        self._taskd[TSK_TITLE] = self._title
+        
+        return self._taskd
