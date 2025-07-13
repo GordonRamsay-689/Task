@@ -61,7 +61,11 @@ class Master:
         return os.path.abspath(dirname)
 
     def _is_Task(self, task_id):
-        ''' Confirms if task ID is a Task object. '''
+        ''' Confirms if task ID is a Task object. 
+        
+        Raises:
+            TaskNotFoundError
+        '''
         try:
             if isinstance(self.data["tasks"][task_id], Task):
                 return True
@@ -71,7 +75,12 @@ class Master:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
     def add_task_to_group(self, task_id, group_id): 
-        ''' Adds an existing task ID to a group. '''
+        ''' Adds an existing task ID to a group. 
+        
+        Raises: 
+            GroupNotFoundError
+            TaskNotFoundError
+        '''
         error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
 
         if not task_id in self.data["tasks"]:
@@ -91,11 +100,13 @@ class Master:
         attribute of Task object with ID parent_task_id. 
         
         Returns task ID on completion.
+
+        Raises:
+            TaskCreationError
+            TaskNotFoundError
         '''
-        try:
-            task_id = self.create_task(subtask=True, task_kwargs=task_kwargs)
-        except TaskCreationError:
-            raise
+
+        task_id = self.create_task(subtask=True, task_kwargs=task_kwargs)
 
         try:
             self.load_task(parent_task_id)
@@ -110,7 +121,12 @@ class Master:
         return task_id
 
     def create_task(self, group_id=None, subtask=False, task_kwargs={}):
-        ''' Creates a Task object with args in task_kwargs and returns task ID on success. '''
+        ''' Creates a Task object with args in task_kwargs and returns task ID on success. 
+        
+        Raises:
+            GroupNotFoundError
+            TaskCreationError
+        '''
         if group_id and subtask:
             raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
                                     e=TypeError, 
@@ -142,7 +158,11 @@ class Master:
         return self.data["current_id"]
 
     def get_group_task_ids(self, group_id):
-        ''' Returns a list of task IDs in group. '''
+        ''' Returns a list of task IDs in group. 
+        
+        Raises:
+            GroupNotFoundError
+        '''
         try:
             task_ids = self.data["groups"][group_id]["task_ids"]
         except KeyError as e:
@@ -155,12 +175,14 @@ class Master:
         return list(self.data["groups"].keys())
     
     def get_task(self, task_id):
-        ''' Loads and returns Task object with ID task_id. '''
-        try:
-            self.load_task(task_id)
-        except TaskNotFoundError:
-            raise
+        ''' Loads and returns Task object with ID task_id. 
         
+        Raises:
+            TaskNotFoundError
+        '''
+        
+        self.load_task(task_id)
+
         return self.data["tasks"][task_id]
 
     def get_tasks(self):
@@ -168,6 +190,13 @@ class Master:
         return list(self.data["tasks"].keys())
 
     def init_storage_file(self):
+        ''' Initializes (and if not exists, creates) the storage file. 
+        
+        Raises:
+            DataError
+            FSError
+        '''
+
         group = copy.deepcopy(GROUP_TEMPLATE)
         group["title"] = "General"
 
@@ -199,7 +228,12 @@ class Master:
                 raise DataError(path=self.STORAGE_PATH, msg=f"Expected: {storage}\nActual: {written}")
 
     def load_data(self):
-        ''' Loads from storage file to self.data. '''
+        ''' Loads from storage file to self.data. 
+        
+        Raises:
+            DataError
+            FSError
+        '''
 
         data = {}
 
@@ -222,23 +256,17 @@ class Master:
             self.ui.relay(message=f"No data loaded from storage file at: '{self.STORAGE_PATH}'.")
             self.ui.relay(message="Attempting to create a new storage file...")
 
-            try:
-                self.init_storage_file()
-            except (DataError, FSError):
-                raise
-            
-            try:
-                self.load_data()
-            except (FSError, DataError):
-                raise
+            self.init_storage_file()
+            self.load_data()
 
     def load_group(self, group_id):
-        ''' Converts task dicts to Task objects for tasks in group with ID group_id. '''        
+        ''' Converts task dicts to Task objects for tasks in group with ID group_id. 
         
-        try:
-            task_ids = self.get_group_tasks(group_id)
-        except GroupNotFoundError:
-            raise
+        Raises:
+            GroupNotFoundError
+        '''        
+        
+        task_ids = self.get_group_tasks(group_id)
 
         for task_id in task_ids:
             try:
@@ -251,12 +279,13 @@ class Master:
         ''' Converts task dict to Task object for task with ID task_id. 
         
         Recursively loads parent and subtasks.
+        
+        Raises:
+            TaskNotFoundError
         '''
-        try:
-            if self._is_Task(task_id):
-                return
-        except TaskNotFoundError:
-            raise
+        
+        if self._is_Task(task_id):
+            return
 
         task = Task(self, 
                     task_id=task_id, 
@@ -265,30 +294,28 @@ class Master:
         self.data["tasks"][task_id] = task
         
         for subtask_id in self.data["tasks"][task_id].get_subtasks():
-            try:
-                self.load_task(subtask_id)
-            except TaskNotFoundError:
-                raise 
+            self.load_task(subtask_id)
 
         for parent_id in self.data["tasks"][task_id].get_parents():
-            try:
-                self.load_task(parent_id)
-            except TaskNotFoundError:
-                raise 
-
+            self.load_task(parent_id)
+        
     def orphan_task(self, task_id):
-        ''' Removes a task from all parents' subtask attribute. '''
-        try:
-            self.load_task(task_id)
-        except TaskNotFoundError:
-            raise
+        ''' Removes a task from all parents' subtask attribute. 
 
+        Raises:
+            TaskNotFoundError
+        '''
+        self.load_task(task_id)
+        
         for parent_id in self.data["tasks"][task_id].get_parents():
             self.data["tasks"][parent_id].remove_subtask(task_id)
 
     def remove_task(self, task_id):
         ''' Removes a task from all groups, orphans the task 
         and recursively removes all of its subtaskts.
+
+        Raises:
+            TaskNotFoundError
         '''
 
         for group_id in self.data["groups"].keys():
@@ -315,7 +342,11 @@ class Master:
         self.data["tasks"].pop(task_id)
     
     def remove_task_from_group(self, task_id, group_id):
-        ''' Removes a task from a group. '''
+        ''' Removes a task from a group. 
+        
+        Raises:
+            GroupNotFoundError
+        '''
         try:
             self.data["groups"][group_id]["task_ids"].remove(task_id)
         except KeyError as e:
@@ -328,7 +359,11 @@ class Master:
         self.data["current_id"] = id
 
     def write_data(self): 
-        ''' Writes self.data to storage file. '''
+        ''' Writes self.data to storage file. 
+        
+        Raises:
+            FSError
+        '''
 
         data = copy.deepcopy(self.data)
         for task_id, task in self.data["tasks"].items():
@@ -412,5 +447,5 @@ if __name__ == '__main__':
     except (DataError, FSError) as e:
         print(e)
         sys.exit()
-        
+
     master.write_data()
