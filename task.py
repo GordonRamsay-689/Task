@@ -158,10 +158,26 @@ class Task:
         self._validate_base_object(title, str, "title", length=MAX_TITLE_LENGTH)
 
     def add_parent(self, parent_id):
+        self._validate_id(parent_id)
         self._parents.add(parent_id)
 
     def add_subtask(self, subtask_id):
+        self._validate_id(subtask_id)
         self._subtasks.add(subtask_id)
+
+    def add_comment(self, comment):
+        self._validate_comment(comment)
+        self._comments.append(comment)
+    
+    def add_resource(self, resource):
+        self._validate_resource(resource)
+        self._resources.append(resource)
+
+    def remove_comment(self, index):
+        self._comments.pop(index)
+    
+    def remove_resource(self, index):
+        self._resources.pop(index)
 
     def remove_parent(self, parent_id):
         try:
@@ -210,10 +226,18 @@ class Task:
     def get_title(self):
         return self._title
 
-    def set_status(self, value):
-        self._validate_status(value)
+    def set_title(self, title):
+        self._validate_title(title)
+        self._title = title
 
-        self._status = value
+    def set_description(self, description):
+        self._validate_description(description)
+        self._description = description
+        
+    def set_status(self, status):
+        self._validate_status(status)
+
+        self._status = status
 
     def toggle_status(self):
         self._status = not self._status
