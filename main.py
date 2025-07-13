@@ -6,64 +6,6 @@ from globals import *
 # ? check for success on write in write_data()
 # ? relay failure for each failed task when loading group.
 
-class CustomException(Exception):
-    def _construct_error_str(self, desc, msg):
-        text = f"Error: {desc}"
-        
-        if msg:
-            text += f"\nInfo: {msg}"
-
-        return text
-
-    def __str__(self):
-        return self._construct_error_str(self.desc, self.msg)
-
-class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
-    ''' Data is corrupted or otherwise unexpected. '''
-    def __init__(self, e=None, msg="", path=None, task_id=None):
-        self.e = e
-        self.msg = msg
-        self.path = path
-        self.task_id = task_id
-
-        self.desc = f"Data is corrupt."
-
-class FSError(CustomException):
-    ''' A filesystem error occured. '''
-    def __init__(self, path, e=None, msg="", task_id=None):
-        self.e = e
-        self.msg = msg
-        self.task_id = task_id
-        self.path = path
-
-        self.desc = f"An error occured while trying to access: '{self.path}'."
-
-class GroupNotFoundError(CustomException):
-    def __init__(self, group_id, e=None, msg="", task_id=None,):
-        self.e = e
-        self.group_id = group_id
-        self.msg = msg
-        self.task_id = task_id
-
-        self.desc = f"No group ID found with ID: '{self.group_id}'"
-
-class TaskCreationError(CustomException):
-    ''' An error occured during Task object creation. '''
-    def __init__(self, task_id, e=None, msg=""):
-        self.e = e
-        self.msg = msg
-        self.task_id = task_id
-
-        self.desc = f"Failed to create task with ID: '{self.task_id}'"
-
-class TaskNotFoundError(CustomException):
-    def __init__(self, task_id, e=None, msg=""):
-        self.e = e
-        self.msg = msg
-        self.task_id = task_id
-        
-        self.desc = f"No task found with ID: '{self.task_id}'"
-
 class Master:
     ''' Manages I/O operations and Task objects. '''
     def __init__(self, ui):
