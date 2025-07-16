@@ -50,7 +50,7 @@ FUNCTIONS = {
 }
 
 # Task
-TSK_COMMENTS = "comment"
+TSK_COMMENTS = "comments"
 TSK_DESCRIPTION = "description"
 TSK_RESOURCES = "resources"
 TSK_STATUS = "completed"
