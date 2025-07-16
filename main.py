@@ -127,9 +127,12 @@ class Master:
             GroupNotFoundError
             TaskCreationError
         '''
+        if "task_id" in task_kwargs.keys():
+            raise TaskCreationError(task_id=task_kwargs["task_id"],
+                                    msg="Cannot create task with excplicit task ID. Interact with Task object directly to achieve this, or use Master.load_task() to load an existing task with provided ID.")
+        
         if group_id and subtask:
             raise TaskCreationError(task_id=increment_id(self.get_current_id()), 
-                                    e=TypeError, 
                                     msg="Argument Error: A task cannot be both a subtask and part of a group.")
 
         try:
@@ -425,11 +428,5 @@ if __name__ == '__main__':
     except (DataError, FSError) as e:
         print(e)
         sys.exit()
-
-    master.create_task(task_kwargs={
-        "task_id": "A",
-        "resources": ["h", "habbabbababa"]
-    })
-
 
     master.write_data()
