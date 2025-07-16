@@ -76,7 +76,7 @@ class Task:
                 raise TypeError("'taskd' is not of type dict.")
             
             if taskd.keys() != copy.deepcopy(TASKD_TEMPLATE).keys():
-                raise TypeError(f"Provided 'taskd' does not follow the expected structure of a task dictionary.\nIf this dictionary was loaded this indicates that data may have been corrupted.")
+                raise ValueError(f"Provided 'taskd' does not follow the expected structure of a task dictionary.\nIf this dictionary was loaded this indicates that data may have been corrupted.")
 
             comments = taskd[TSK_COMMENTS]
             description = taskd[TSK_DESCRIPTION]
@@ -94,12 +94,29 @@ class Task:
         self._validate_parents(parents)
         self._validate_title(title)
 
-    def _validate_base_length(self, object, length, name):
-        if len(object) > length:
-            raise ValueError(f"Lenght of '{name}' exceeds maximum of {length}.") ## Not very helpful
+    def _validate_base_length(self, object, max_length, name):
+        # ? Potential set to list conversion, probably superfluos.
+        
+        if len(object) > max_length:
+            msg = msg = f"Lenght of '{name}' exceeds maximum of {max_length}."
+
+            if not isinstance(object, str):
+                object = str(object)
+            
+            p1, p2 = msg.split(" exceeds")
+            msg = f"{p1} ({object[:6]}..) exceeds{p2}"
+
+            raise ValueError(msg)
 
     def _validate_base_list(self, lst, fn, name, item_type=None):
-        self._validate_base_object(lst, list, name)
+        type_to_max_len = {
+            TSK_COMMENTS: MAX_COMMENTS,
+            TSK_RESOURCES: MAX_RESOURCES,
+            TSK_SUBTASKS: None,
+            TSK_PARENTS: None
+        }
+
+        self._validate_base_object(lst, list, name, max_length=type_to_max_len[name])
 
         for item in lst:
             try:
@@ -112,17 +129,22 @@ class Task:
                 
                 raise TypeError(msg) from e
             except ValueError as e:
-                raise TypeError(f"One of the itmes in '{name}' exceeds maximum length.") from e
+                if fn == self._validate_id:
+                    msg = f"One of the IDs in '{name}' is not a valid task ID."
+                else:
+                    msg = f"One of the values in '{name}' is invalid:\n\t{e}"
 
-    def _validate_base_object(self, object, type, name, length=None):
+                raise ValueError(msg) from e
+
+    def _validate_base_object(self, object, type, name, max_length=None):
         if not isinstance(object, type):
             raise TypeError(f"'{name}' is not of type {type}.")
         
-        if length:
-            self._validate_base_length(object, length, name)
+        if max_length:
+            self._validate_base_length(object, max_length, name)
 
     def _validate_comment(self, comment):
-        self._validate_base_object(comment, str, "comment", length=MAX_COMMENT_LEN)
+        self._validate_base_object(comment, str, "comment", max_length=MAX_COMMENT_LEN)
         
     def _validate_comments(self, comments):
         self._validate_base_list(comments, self._validate_comment, 'comments', item_type=str)
@@ -130,19 +152,19 @@ class Task:
         self._validate_base_length(comments, MAX_COMMENTS, "comments")
 
     def _validate_description(self, description):
-        self._validate_base_object(description, str, "description", length=MAX_DESCRIPTION_LEN)
+        self._validate_base_object(description, str, "description", max_length=MAX_DESCRIPTION_LEN)
         
     def _validate_id(self, task_id):
         try:
             int(task_id, 36)
         except (TypeError, ValueError) as e:
-            raise TypeError(f"Invalid task ID. Not a base-36 string.") from e
+            raise type(e)(f"Invalid task ID. Not a base-36 string.") from e
 
     def _validate_parents(self, parents):
         self._validate_base_list(parents, self._validate_id, 'parents')
 
     def _validate_resource(self, resource):
-        self._validate_base_object(resource, str, "resource", length=MAX_RESOURCE_LEN)
+        self._validate_base_object(resource, str, "resource", max_length=MAX_RESOURCE_LEN)
 
     def _validate_resources(self, resources):
         self._validate_base_list(resources, self._validate_resource, 'resources', item_type=str)
@@ -155,7 +177,7 @@ class Task:
         self._validate_base_list(subtasks, self._validate_id, 'subtasks')
 
     def _validate_title(self, title):
-        self._validate_base_object(title, str, "title", length=MAX_TITLE_LENGTH)
+        self._validate_base_object(title, str, "title", max_length=MAX_TITLE_LENGTH)
 
     def add_parent(self, parent_id):
         self._validate_id(parent_id)

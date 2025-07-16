@@ -426,4 +426,10 @@ if __name__ == '__main__':
         print(e)
         sys.exit()
 
+    master.create_task(task_kwargs={
+        "task_id": "A",
+        "resources": ["h", "habbabbababa"]
+    })
+
+
     master.write_data()
