@@ -417,28 +417,6 @@ if __name__ == '__main__':
                     u_in = prompt_user("> ")
                 return int(u_in)
 
-        def error(self, error='', error_class=None, info='', fatal=False): # ! Currently unused.
-            ''' Provides information about an error. 
-            
-            If fatal=True the error is so severe that the program cannot continue.
-            '''
-
-            if error_class:
-                print("Class: ", end='')
-                print(error_class)
-
-            if error:
-                print("Error: ", end='')
-                print(error)
-            
-            if info:
-                print("Info: ", end='')
-                print(info)
-
-            if fatal:
-                print("A fatal error has occured. Exiting without updating storage file.")
-                sys.exit()
-
     master = Master(DevUI())
     
     # Dev ---------------
