@@ -290,9 +290,14 @@ class Master:
         if self._is_Task(task_id):
             return
 
-        task = Task(self, 
-                    task_id=task_id, 
-                    taskd=self.data["tasks"][task_id])
+        try:
+            task = Task(self, 
+                        task_id=task_id, 
+                        taskd=self.data["tasks"][task_id])
+        except (TypeError, ValueError) as e:
+            raise DataError(task_id=increment_id(self.get_current_id()), 
+                                e=e,
+                                msg=f"Data in loaded task dict with ID '{task_id}' was invalid.\nDescription: {e}")
 
         self.data["tasks"][task_id] = task
         
