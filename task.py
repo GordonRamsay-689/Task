@@ -96,7 +96,6 @@ class Task:
 
     def _validate_base_length(self, object, max_length, name):
         # ? Potential set to list conversion, probably superfluos.
-        
         if len(object) > max_length:
             msg = msg = f"Lenght of '{name}' exceeds maximum of {max_length}."
 
@@ -123,14 +122,14 @@ class Task:
                 fn(item)
             except TypeError as e:
                 if fn == self._validate_id:
-                    msg = f"One of the IDs in '{name}' is not a valid task ID."
+                    msg = f"One of the IDs in '{name}' is not a valid task ID:\n\t{e}"
                 else:
-                    msg = f"One of the items in '{name}' is not of type {item_type}."
+                    msg = f"One of the items in '{name}' is not of type {item_type}:\n\t{e}"
                 
                 raise TypeError(msg) from e
             except ValueError as e:
                 if fn == self._validate_id:
-                    msg = f"One of the IDs in '{name}' is not a valid task ID."
+                    msg = f"One of the IDs in '{name}' is not a valid task ID:\n\t{e}"
                 else:
                     msg = f"One of the values in '{name}' is invalid:\n\t{e}"
 
