@@ -335,10 +335,12 @@ class Master:
 
         try:
             self.load_task(task_id)
-        except TaskNotFoundError as e: 
+        except (TaskNotFoundError, DataError) as e: 
             # Indicates failure to load task (OR its parents/subtasks, which indicates data corruption).
             self._deep_remove_task(task_id)
-            raise TaskNotFoundError(task_id=e.task_id) from e
+            raise type(e)(msg=f"An attempt has been made to remove mention of task with ID '{task_id}' from groups, parents and subtasks lists and all of its children (if any).", 
+                          task_id=e.task_id, 
+                          e=e) from e
 
         self.orphan_task(task_id)
         
@@ -427,12 +429,3 @@ if __name__ == '__main__':
                 return int(u_in)
 
     master = Master(DevUI())
-    
-    # Dev ---------------
-    try:
-        master.load_data()
-    except (DataError, FSError) as e:
-        print(e)
-        sys.exit()
-
-    master.write_data()
