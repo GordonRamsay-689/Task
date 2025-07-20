@@ -75,7 +75,7 @@ class Task:
             if not isinstance(taskd, dict):
                 raise TypeError("'taskd' is not of type dict.")
             
-            if taskd.keys() != copy.deepcopy(TASKD_TEMPLATE).keys():
+            if taskd.keys() != TASKD_TEMPLATE.keys():
                 raise ValueError(f"Provided 'taskd' does not follow the expected structure of a task dictionary.\nIf this dictionary was loaded this indicates that data may have been corrupted.")
 
             comments = taskd[TSK_COMMENTS]
