@@ -4,7 +4,7 @@ from id_gen import increment_id
 from globals import *
 
 # ? check for success on write in write_data()
-# ? relay failure for each failed task when loading group.
+# ? relay failure for each failed task when loading group, alternatively a log of actions taken (remove from a subtasks list, remove x and y tasks etc.)
 
 class Master:
     ''' Manages I/O operations and Task objects. '''
@@ -16,44 +16,47 @@ class Master:
 
         self.data = {}
 
-    def _deep_remove_task(self, task_id): # ! Broken
-        ''' Goes through all tasks attempting to remove task with ID task_id
-        from any substasks and parents lists. Recursively performs the same 
-        operation for any subtasks found.
+    def _deep_remove_task(self, task_id):
+        ''' Removes task with ID task_id from Master.data["tasks"], then iterates through
+        all tasks in the dict and removes task with ID task_id from any parents or subtasks
+        lists.
+
+        If the task is parent to any other tasks those subtasks are removed as well,
+        recursively.
          
-        This is a slow operation, prefer self.remove_task(). 
+        This function is intended as fallback for Master.remove_task() (and is potentially slower)
+        as well as for use when data corruption is suspected (for example, a non-existent task ID 
+        remaining in a parents or subtasks list).
         '''
-        for _task_id, task in self.data["tasks"].items():
-            
-            if not _task_id in self.data["tasks"].keys(): # ! If a subtask has been removed in a deeper recursion layer
-                continue
 
-            if self._is_Task(_task_id): # Potentially put in try-except TaskNotFoundError
-                try:
-                    task.remove_subtask(task_id)
-                    self.deep_remove_task(_task_id)
-                except ValueError:
-                    pass
+        to_remove = set()
 
-                try:
-                    task.remove_parent(task_id)
-                except ValueError:
-                    pass
-            else:
-                try:
+        for _task_id, task in copy.copy(self.data["tasks"]).items():
+            if isinstance(task, Task):
+                task.remove_subtask(task_id)
+
+                if task_id in task.get_parents(): 
+                    to_remove.add(_task_id) # If task_id is a parent we need to remove child
+                    for __task_id in task.get_subtasks():
+                        to_remove.add(__task_id)
+            elif isinstance(task, dict):
+                if task_id in task[TSK_SUBTASKS]:
                     task[TSK_SUBTASKS].remove(task_id)
-                    self.deep_remove_task(_task_id)
-                except ValueError:
-                    pass
-    
-                try:
-                    task[TSK_PARENTS].remove(task_id)
-                except ValueError:
-                    pass
+
+                if task_id in task[TSK_PARENTS]:
+                    to_remove.add(_task_id) # If task_id is a parent we need to remove child
+                    for __task_id in task[TSK_SUBTASKS]:
+                        to_remove.add(__task_id)
+
         try:
-            self.data["tasks"].pop(task_id)
-        except ValueError:
+            self.data["tasks"].pop(task_id) 
+        except KeyError: # A nonexistent task, most likely from a subtasks or parents list.
             pass
+
+        for _task_id in to_remove:
+            for group_id in self.data["groups"]:
+                self.remove_task_from_group(_task_id, group_id)
+            self._deep_remove_task(_task_id)
 
     def _get_script_dir(self):
         ''' Get the directory of the file that Master object is created from. '''
@@ -318,7 +321,7 @@ class Master:
         for parent_id in self.data["tasks"][task_id].get_parents():
             self.data["tasks"][parent_id].remove_subtask(task_id)
 
-    def remove_task(self, task_id): # ! Breaks if unable to load a parent task.
+    def remove_task(self, task_id, subtask=False):
         ''' Removes a task from all groups, orphans the task 
         and recursively removes all of its subtaskts.
 
@@ -326,24 +329,22 @@ class Master:
             TaskNotFoundError
         '''
 
-        for group_id in self.data["groups"].keys():
-            self.remove_task_from_group(task_id, group_id)
+        if not subtask:
+            for group_id in self.data["groups"].keys():
+                self.remove_task_from_group(task_id, group_id)
 
         try:
             self.load_task(task_id)
-        except TaskNotFoundError:
-            try:
-                self._deep_remove_task(task_id) # A slower method of removal. # ! Broken
-            except:
-                pass
-            
-            raise
+        except TaskNotFoundError as e: 
+            # Indicates failure to load task (OR its parents/subtasks, which indicates data corruption).
+            self._deep_remove_task(task_id)
+            raise TaskNotFoundError(task_id=e.task_id) from e
 
         self.orphan_task(task_id)
         
         for subtask_id in self.data["tasks"][task_id].get_subtasks():
             try:
-                self.remove_task(subtask_id)
+                self.remove_task(subtask_id, subtask=True)
             except TaskNotFoundError:
                 pass
 
