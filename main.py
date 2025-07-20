@@ -30,24 +30,36 @@ class Master:
         '''
 
         to_remove = set()
+        taskd_keys = TASKD_TEMPLATE.keys()
 
-        for _task_id, task in copy.copy(self.data["tasks"]).items():
-            if isinstance(task, Task):
-                task.remove_subtask(task_id)
+        for _task_id, _task in copy.copy(self.data["tasks"]).items():
+            if task_id == _task_id:
+                pass
+            
+            if isinstance(_task, Task):
+                _task.remove_subtask(task_id)
 
-                if task_id in task.get_parents(): 
-                    to_remove.add(_task_id) # If task_id is a parent we need to remove child
-                    for __task_id in task.get_subtasks():
+                if task_id in _task.get_parents(): 
+                    to_remove.add(_task_id)
+
+                    for __task_id in _task.get_subtasks():
                         to_remove.add(__task_id)
-            elif isinstance(task, dict):
-                if task_id in task[TSK_SUBTASKS]:
-                    task[TSK_SUBTASKS].remove(task_id)
+            elif isinstance(_task, dict):
+                if _task.keys() != taskd_keys:
+                    to_remove.add(_task_id)
+                    continue
 
-                if task_id in task[TSK_PARENTS]:
-                    to_remove.add(_task_id) # If task_id is a parent we need to remove child
-                    for __task_id in task[TSK_SUBTASKS]:
+                if task_id in _task[TSK_SUBTASKS]:
+                    _task[TSK_SUBTASKS].remove(task_id)
+
+                if task_id in _task[TSK_PARENTS]:
+                    to_remove.add(_task_id)
+
+                    for __task_id in _task[TSK_SUBTASKS]:
                         to_remove.add(__task_id)
-
+            else:
+                to_remove.add(_task_id)
+                
         try:
             self.data["tasks"].pop(task_id) 
         except KeyError: # A nonexistent task, most likely from a subtasks or parents list.
