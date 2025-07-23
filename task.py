@@ -213,7 +213,7 @@ class Task:
             pass
 
     def generate_task_id(self):
-        id = generate_id(self.master.data["current_id"])
+        id = generate_id(self.master.data["current_task_id"])
         self.master.update_current_id(id)
         return id
 

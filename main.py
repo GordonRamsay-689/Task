@@ -67,7 +67,7 @@ class Master:
 
         for _task_id in to_remove:
             for group_id in self.data["groups"]:
-                self.group_remove(_task_id, group_id)
+                self.group_remove_task(_task_id, group_id)
             self._deep_remove_task(_task_id)
 
     def _get_script_dir(self):
@@ -98,31 +98,14 @@ class Master:
         except KeyError as e:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
-    def group_add(self, task_id, group_id): 
-        ''' Adds an existing task ID to a group. 
-        
-        Raises: 
-            GroupNotFoundError
-            TaskNotFoundError
-            ValueError
-        '''
-        error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
+    def create_group(self, title=None):
+        ''' Creates a new group and returns its group ID. '''
 
-        try:
-            task = self.get_task(task_id)
-        except TaskNotFoundError as e:
-            raise TaskNotFoundError(e=e, task_id=task_id, msg=error_message) from e
+        group_id = increment_id(self.get_current_group_id())
+        self.data["groups"][group_id] = copy.deepcopy(GROUP_TEMPLATE)
+        self.data["current_group_id"] = group_id
 
-        if task.get_parents(): # Todo: raise appropriate error
-            raise ValueError(f"{error_message} A subtask cannot be part of a group.")
-
-        try:        
-            self.data["groups"][group_id]["task_ids"].add(task_id)
-        except KeyError as e:
-            raise GroupNotFoundError(group_id=group_id, 
-                                     task_id=task_id, 
-                                     msg=error_message, 
-                                     e=e)
+        return group_id
 
     def create_subtask(self, parent_task_id, task_kwargs={}):
         ''' Creates a Task object and adds task ID to subtask 
@@ -176,7 +159,7 @@ class Master:
 
         if group_id:
             try:
-                self.group_add(task_id, group_id)
+                self.group_add_task(task_id, group_id)
             except GroupNotFoundError as e:
                 e.task_id = task_id
                 e.msg += f"\nTask with ID '{task_id}' was created but not succesfully added to any group."
@@ -188,7 +171,10 @@ class Master:
         return self.data["active_group"]
     
     def get_current_id(self):
-        return self.data["current_id"]
+        return self.data["current_task_id"]
+
+    def get_current_group_id(self):
+        return self.data["current_group_id"]
 
     def get_group_tasks(self, group_id):
         ''' Returns a list of task IDs in group. 
@@ -222,6 +208,48 @@ class Master:
         ''' Returns a list of all task IDs. '''
         return list(self.data["tasks"].keys())
 
+    def group_add_task(self, task_id, group_id): 
+        ''' Adds an existing task ID to a group. 
+        
+        Raises: 
+            GroupNotFoundError
+            TaskNotFoundError
+            ValueError
+        '''
+        error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
+
+        try:
+            task = self.get_task(task_id)
+        except TaskNotFoundError as e:
+            raise TaskNotFoundError(e=e, task_id=task_id, msg=error_message) from e
+
+        if task.get_parents(): # Todo: raise appropriate error
+            raise ValueError(f"{error_message} A subtask cannot be part of a group.")
+
+        try:        
+            self.data["groups"][group_id]["task_ids"].add(task_id)
+        except KeyError as e:
+            raise GroupNotFoundError(group_id=group_id, 
+                                     task_id=task_id, 
+                                     msg=error_message, 
+                                     e=e)
+
+    def group_remove_task(self, task_id, group_id):
+        ''' Removes a task from a group. 
+        
+        Raises:
+            GroupNotFoundError
+        '''
+        try:
+            group = self.data["groups"][group_id]
+        except KeyError as e:
+            raise GroupNotFoundError(group_id=group_id, e=e)
+        
+        try:
+            group["task_ids"].remove(task_id)
+        except KeyError: # Task is not in group
+            return
+
     def init_storage_file(self):
         ''' Initializes (and if not exists, creates) the storage file. 
         
@@ -235,7 +263,8 @@ class Master:
         group["task_ids"] = list(group["task_ids"])
 
         storage = {
-            "current_id": "0", # IDs are in base 36, hence strings
+            "current_task_id": "0", # IDs are in base 36, hence strings
+            "current_group_id": "0",
             "active_group": "0",
             "groups": {"0": group},
             "tasks": {} 
@@ -309,7 +338,7 @@ class Master:
             try:
                 self.load_task(task_id)
             except TaskNotFoundError:
-                self.group_remove(task_id, group_id)
+                self.group_remove_task(task_id, group_id)
                 continue
 
     def load_task(self, task_id):
@@ -362,7 +391,7 @@ class Master:
 
         if not subtask:
             for group_id in self.data["groups"].keys():
-                self.group_remove(task_id, group_id)
+                self.group_remove_task(task_id, group_id)
 
         try:
             self.load_task(task_id)
@@ -383,25 +412,19 @@ class Master:
 
         self.data["tasks"].pop(task_id)
     
-    def group_remove(self, task_id, group_id):
-        ''' Removes a task from a group. 
-        
-        Raises:
-            GroupNotFoundError
-        '''
+    def remove_group(self, group_id):
+        ''' Removes group with group ID group_id. Tasks are left without a group unless explicitly moved first. '''
         try:
-            group = self.data["groups"][group_id]
+            self.data["groups"].pop(group_id)
         except KeyError as e:
-            raise GroupNotFoundError(group_id=group_id, e=e)
-        
-        try:
-            group["task_ids"].remove(task_id)
-        except KeyError: # Task is not in group
-            return
+            raise GroupNotFoundError(e=e, 
+                                     group_id=group_id, 
+                                     msg=f"Unable to remove group with ID: '{group_id}'.") from e
+
 
     def update_current_id(self, id):
         ''' Set current ID to id. '''
-        self.data["current_id"] = id
+        self.data["current_task_id"] = id
 
     def write_data(self): 
         ''' Writes self.data to storage file. 
