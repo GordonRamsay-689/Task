@@ -67,7 +67,7 @@ class Master:
 
         for _task_id in to_remove:
             for group_id in self.data["groups"]:
-                self.remove_task_from_group(_task_id, group_id)
+                self.group_remove(_task_id, group_id)
             self._deep_remove_task(_task_id)
 
     def _get_script_dir(self):
@@ -98,7 +98,7 @@ class Master:
         except KeyError as e:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
-    def add_task_to_group(self, task_id, group_id): 
+    def group_add(self, task_id, group_id): 
         ''' Adds an existing task ID to a group. 
         
         Raises: 
@@ -176,7 +176,7 @@ class Master:
 
         if group_id:
             try:
-                self.add_task_to_group(task_id, group_id)
+                self.group_add(task_id, group_id)
             except GroupNotFoundError as e:
                 e.task_id = task_id
                 e.msg += f"\nTask with ID '{task_id}' was created but not succesfully added to any group."
@@ -309,7 +309,7 @@ class Master:
             try:
                 self.load_task(task_id)
             except TaskNotFoundError:
-                self.remove_task_from_group(task_id, group_id)
+                self.group_remove(task_id, group_id)
                 continue
 
     def load_task(self, task_id):
@@ -362,7 +362,7 @@ class Master:
 
         if not subtask:
             for group_id in self.data["groups"].keys():
-                self.remove_task_from_group(task_id, group_id)
+                self.group_remove(task_id, group_id)
 
         try:
             self.load_task(task_id)
@@ -383,7 +383,7 @@ class Master:
 
         self.data["tasks"].pop(task_id)
     
-    def remove_task_from_group(self, task_id, group_id):
+    def group_remove(self, task_id, group_id):
         ''' Removes a task from a group. 
         
         Raises:
