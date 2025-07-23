@@ -1,13 +1,3 @@
-def generate_id(current_id):
-    ''' Generates next ID based on current ID, write as current and return. '''
-
-    try:
-        id  = increment_id(current_id)
-    except KeyError:
-        pass # set ID to 0 or fatal system exit
-
-    return id
-
 def int_to_base(n, base):
     ''' Converts positive int 'n' to string in given 'base' between 10 and 36 inclusive.
 

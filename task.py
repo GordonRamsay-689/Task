@@ -1,5 +1,5 @@
 import copy
-from id_gen import generate_id
+from id_gen import increment_id
 from globals import *
 
 class Task:
@@ -213,7 +213,7 @@ class Task:
             pass
 
     def generate_task_id(self):
-        id = generate_id(self.master.data["current_task_id"])
+        id = increment_id(self.master.data["current_task_id"])
         self.master.update_current_id(id)
         return id
 
