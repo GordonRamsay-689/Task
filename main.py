@@ -75,6 +75,15 @@ class Master:
         dirname, _ = os.path.split(__file__)
         return os.path.abspath(dirname)
 
+    def _groups_task_ids_to(self, type, data):
+        ''' Converts task IDs in a group to set or list. '''
+        
+        if not (type == set or type == list):
+            raise TypeError(f"Invalid type provided: {type}") 
+
+        for group_id in data["groups"].keys():
+            data["groups"][group_id]["task_ids"] = type(data["groups"][group_id]["task_ids"])
+
     def _is_Task(self, task_id):
         ''' Confirms if task ID is a Task object. 
         
@@ -98,12 +107,12 @@ class Master:
         '''
         error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
 
-        if not task_id in self.data["tasks"]:
+        if not task_id in self.get_tasks():
             raise TaskNotFoundError(task_id=task_id, 
                                     msg=error_message)
         
         try:        
-            self.data["groups"][group_id]["task_ids"].append(task_id)
+            self.data["groups"][group_id]["task_ids"].add(task_id)
         except KeyError as e:
             raise GroupNotFoundError(group_id=group_id, 
                                      task_id=task_id, 
@@ -187,7 +196,7 @@ class Master:
         except KeyError as e:
             raise GroupNotFoundError(group_id=group_id, e=e)
         
-        return task_ids
+        return list(task_ids)
 
     def get_groups(self):
         ''' Returns a list of group IDs. '''
@@ -218,6 +227,7 @@ class Master:
 
         group = copy.deepcopy(GROUP_TEMPLATE)
         group["title"] = "General"
+        group["task_ids"] = list(group["task_ids"])
 
         storage = {
             "current_id": "0", # IDs are in base 36, hence strings
@@ -225,6 +235,7 @@ class Master:
             "groups": {"0": group},
             "tasks": {} 
         }
+
         try:
             with open(self.STORAGE_PATH, "w") as f:
                 f.write(json.dumps(storage, ensure_ascii=False))
@@ -269,8 +280,10 @@ class Master:
             raise FSError(e=e, path=self.STORAGE_PATH, msg="An unexpected error occurred while loading data.")
 
         if data:
-            self.data = data
             self.STORAGE_BACKUP = copy.deepcopy(self.data)
+
+            self._groups_task_ids_to(set, data)
+            self.data = data
         else:
             self.ui.relay(message=f"No data loaded from storage file at: '{self.STORAGE_PATH}'.")
             self.ui.relay(message="Attempting to create a new storage file...")
@@ -372,10 +385,13 @@ class Master:
             GroupNotFoundError
         '''
         try:
-            self.data["groups"][group_id]["task_ids"].remove(task_id)
+            group = self.data["groups"][group_id]
         except KeyError as e:
             raise GroupNotFoundError(group_id=group_id, e=e)
-        except ValueError: # task is not in group
+        
+        try:
+            group["task_ids"].remove(task_id)
+        except KeyError: # Task is not in group
             return
 
     def update_current_id(self, id):
@@ -390,7 +406,10 @@ class Master:
         '''
 
         data = copy.deepcopy(self.data)
-        for task_id, task in self.data["tasks"].items():
+        
+        self._groups_task_ids_to(list, data)
+
+        for task_id, task in self.data["tasks"].items(): # Todo: make function using own getters instead of raw dict access.
             if self._is_Task(task_id):    
                 data["tasks"][task_id] = task.write_dict()
         

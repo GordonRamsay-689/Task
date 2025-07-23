@@ -69,7 +69,7 @@ TASKD_TEMPLATE = {
 }
 
 GROUP_TEMPLATE = {
-    "task_ids": [], 
+    "task_ids": set(),
     "title": ""
     }
 
