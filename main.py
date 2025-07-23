@@ -126,7 +126,7 @@ class Master:
         try:
             self.load_task(parent_task_id)
         except TaskNotFoundError as e:
-            e.msg = f"Could not assign task with ID '{task_id}' a subtask of task with ID '{parent_task_id}'.\nAttempting to remove task with ID: '{task_id}'."
+            e.msg = f"Could not make '{task_id}' a subtask of task with ID '{parent_task_id}'.\nAttempting to remove task with ID: '{task_id}'."
             self.remove_task(task_id)        
             raise
 
@@ -164,6 +164,7 @@ class Master:
             try:
                 self.add_task_to_group(task_id, group_id)
             except GroupNotFoundError as e:
+                e.task_id = task_id
                 e.msg += f"\nTask with ID '{task_id}' was created but not succesfully added to any group."
                 raise
             
