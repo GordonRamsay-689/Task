@@ -3,9 +3,6 @@ from task import Task
 from id_gen import increment_id
 from globals import *
 
-# ? check for success on write in write_data()
-# ? relay failure for each failed task when loading group, alternatively a log of actions taken (remove from a subtasks list, remove x and y tasks etc.)
-
 class Master:
     ''' Manages I/O operations and Task objects. '''
     def __init__(self, ui):
