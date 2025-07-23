@@ -213,8 +213,8 @@ class Task:
             pass
 
     def generate_task_id(self):
-        id = increment_id(self.master.data["current_task_id"])
-        self.master.update_current_id(id)
+        id = increment_id(self.master.get_current_task_id())
+        self.master._set_current_task_id(id, validate_id=False)
         return id
 
     def generate_task_title(self): # Todo
