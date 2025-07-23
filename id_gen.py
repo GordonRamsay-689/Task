@@ -1,5 +1,5 @@
 def generate_id(current_id):
-    ''' Reads current ID and generates next ID, write as current and return. '''
+    ''' Generates next ID based on current ID, write as current and return. '''
 
     try:
         id  = increment_id(current_id)
