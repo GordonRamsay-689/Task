@@ -361,7 +361,7 @@ class Master:
         '''        
         
         task_ids = self.get_group_tasks(group_id)
-
+        
         for task_id in task_ids:
             try:
                 self.load_task(task_id)
@@ -448,7 +448,19 @@ class Master:
             raise GroupNotFoundError(e=e, 
                                      group_id=group_id, 
                                      msg=f"Unable to remove group with ID: '{group_id}'.") from e
-    
+
+    def set_active_group(self, group_id):
+        ''' Sets the active group, loading all of its tasks. 
+        
+        Raises:
+            GroupNotFoundError
+        '''
+
+        if self.get_active_group() != group_id:
+            self.load_group(group_id)
+
+            self.data["active_group"] = group_id
+            
     def write_data(self): 
         ''' Writes self.data to storage file. 
         
