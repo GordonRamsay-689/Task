@@ -104,13 +104,18 @@ class Master:
         Raises: 
             GroupNotFoundError
             TaskNotFoundError
+            ValueError
         '''
         error_message = f"Failed to add task with ID '{task_id}' to group with ID '{group_id}'."
 
-        if not task_id in self.get_tasks():
-            raise TaskNotFoundError(task_id=task_id, 
-                                    msg=error_message)
-        
+        try:
+            task = self.get_task(task_id)
+        except TaskNotFoundError as e:
+            raise TaskNotFoundError(e=e, task_id=task_id, msg=error_message) from e
+
+        if task.get_parents(): # Todo: raise appropriate error
+            raise ValueError(f"{error_message} A subtask cannot be part of a group.")
+
         try:        
             self.data["groups"][group_id]["task_ids"].add(task_id)
         except KeyError as e:
@@ -406,7 +411,7 @@ class Master:
         '''
 
         data = copy.deepcopy(self.data)
-        
+
         self._groups_task_ids_to(list, data)
 
         for task_id, task in self.data["tasks"].items(): # Todo: make function using own getters instead of raw dict access.
