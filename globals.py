@@ -83,6 +83,8 @@ MAX_RESOURCE_LEN = 9999
 MAX_RESOURCES = 9999
 MAX_TITLE_LENGTH = 9999
 
+MAX_GROUP_TITLE_LENGTH = 50
+
 # ! Custom Exceptions
 
 class CustomException(Exception):

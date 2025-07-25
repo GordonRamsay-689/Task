@@ -95,6 +95,10 @@ class Master:
         except KeyError as e:
             raise TaskNotFoundError(task_id=task_id, e=e)
 
+    def _is_group(self, group_id):
+        if not group_id in self.get_groups():
+            raise GroupNotFoundError(group_id=group_id)
+
     def _set_current_id(self, id, type, validate_id=True):
         ''' Sets current task ID or group ID based on provided type. 
 
@@ -122,14 +126,32 @@ class Master:
     def _set_current_group_id(self, group_id, validate_id=True):
         self._set_current_id(group_id, "group", validate_id=validate_id)
 
+    def _validate_group_title(self, title): # TODO
+        if not isinstance(title, str):
+            raise TypeError("Group title not of type str.")
+        
+        if not title:
+            raise ValueError("Group title is an empty str.")
+
+        if len(title) >= MAX_GROUP_TITLE_LENGTH:
+            raise ValueError(f"Group title '{title[:MAX_GROUP_TITLE_LENGTH]}..' exceeds maximum character length of {MAX_GROUP_TITLE_LENGTH}.")
+        
     def create_group(self, title=None):
         ''' Creates a new group and returns its group ID. '''
 
+        group = copy.deepcopy(GROUP_TEMPLATE)
+        if title:
+            try:
+                self._validate_group_title(title)
+            except (ValueError, TypeError) as e:
+                raise type(e)(f"Unable to create group with ID: '{group_id}' due to invalid title.\nDescription: {e}") from e
+            
+            group["title"] = title
+
         group_id = increment_id(self.get_current_group_id())
-        self.data["groups"][group_id] = copy.deepcopy(GROUP_TEMPLATE)
-
+        self.data["groups"][group_id] = group
         self._set_current_group_id(group_id, validate_id=False)
-
+        
         return group_id
 
     def create_subtask(self, parent_task_id, task_kwargs={}):
@@ -214,6 +236,11 @@ class Master:
         
         return list(task_ids)
 
+    def get_group_title(self, group_id):
+        self._is_group(group_id)
+
+        return self.data["groups"][group_id]["title"]
+    
     def get_groups(self):
         ''' Returns a list of group IDs. '''
         return list(self.data["groups"].keys())
@@ -457,7 +484,25 @@ class Master:
             self.load_group(group_id)
 
             self.data["active_group"] = group_id
-            
+
+    def set_group_title(self, group_id, title):
+        ''' Sets group title.
+        
+        Raises:
+            ValueError
+            TypeError
+            GroupNotFoundError
+        '''
+
+        self._is_group(group_id)        
+
+        try:
+            self._validate_group_title(title)
+        except (ValueError, TypeError) as e:
+            raise type(e)(f" Invalid title for group: '{group_id}'.\nDescription: {e}") from e
+        
+        self.data["groups"][group_id]["title"] = title
+
     def write_data(self): 
         ''' Writes self.data to storage file. 
         
