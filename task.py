@@ -3,7 +3,7 @@ from id_gen import increment_id
 from globals import *
 
 class Task:
-    def __init__(self, master, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
+    def __init__(self, master=None, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
         ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
         or with provided parameters if argument task_dict is not provided. If taskd is provided all other keyword 
         arguments will be ignored.
@@ -213,6 +213,13 @@ class Task:
             pass
 
     def generate_task_id(self):
+        ''' Generates a task ID based on information provided by master.
+        If Task has no master generate_task_id() returns -1, indicating task IDs are not being tracked.
+        '''
+
+        if not self.master:
+            return "-1"
+        
         id = increment_id(self.master.get_current_task_id())
         self.master._set_current_task_id(id, validate_id=False)
         return id
