@@ -3,16 +3,35 @@ from id_gen import increment_id
 from globals import *
 
 class Task:
+    ''' Represents a task. 
+    
+    If 'taskd' is passed the data from 'taskd' (task dictionary) will be validated and then used to construct self (Task). 'task_id' will also be validated. 
+    See '_validate_id()' for format and type requirements. If 'taskd' is not passed 'task_id' will be ignored, and an ID will be generated. All other 
+    arguments will be used (except 'master'), if any, to construct the Task object. 'master' is always optional and if passed is expected to contain method 'get_current_task_id()'. 
+    
+    Args:
+    
+        taskd, task_id, [master]
+            OR 
+        [status], [title], [subtasks], [parents], [comments], [description], [resources], [master]
+
+
+    Function prefixes:
+
+        '__'          : Only to be called by Python.
+        '_'           : Private, to be called by self (Task).
+        '_validate_x' : Validates data passed to object corresponding to attribute '_x'. See each individual '_validate' function to see what format is expected
+                        for each attribute.
+        'get_x'       : Returns a copy of the attribute '_x' in Task (with some exceptions, like 'get_status_symbol()' which doesn't correspond
+                        directly to any attribute). Modifying the returned copy does not modify the Task object itself.
+        'set_x'       : Sets attribute '_x' to provided data if it passes validation by '_validate_x'.
+        'update_x'    : Replaces (sets) the value of an already existing list entry after provided data if it passes validation by '_validate_x'.
+                        Trying to update an index with no associated value will raise IndexError.
+        'add_x'       : Adds value to list or set if it passes validation by '_validate_x'.
+        'remove_x'    : Removes by value from set or by index from list. 
+    '''
+
     def __init__(self, master=None, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
-        ''' The Task object can be initialized with either an existing task dictionary (typically loaded from JSON)
-        or with provided parameters if argument task_dict is not provided. If taskd is provided all other keyword 
-        arguments will be ignored.
-
-        If taskd is provided a task_id must also be provided
-
-        If no taskd and no title is provided a title will be generated.
-        '''
-
         self.master = master
 
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
