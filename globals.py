@@ -100,7 +100,7 @@ class CustomException(Exception):
         return self._construct_error_str(self.desc, self.msg)
 
 class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
-    ''' Data is corrupted or otherwise unexpected. '''
+    ''' Master.data (or storage file) is corrupted or otherwise unexpected. '''
     def __init__(self, e=None, msg="", path=None, task_id=None):
         self.e = e
         self.msg = msg
