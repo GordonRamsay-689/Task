@@ -13,7 +13,7 @@ class Task:
     
         taskd, task_id, [master]
             OR 
-        [status], [title], [subtasks], [parents], [comments], [description], [resources], [master]
+        [status], [title], [subtasks], [parents], [comments], [description], [links], [files], [master]
 
 
     Function prefixes:
@@ -31,12 +31,12 @@ class Task:
         'remove_x'    : Removes by value from set or by index from list. 
     '''
 
-    def __init__(self, master=None, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", resources=[]):
+    def __init__(self, master=None, taskd={}, task_id=None, status=False, title="", subtasks=[], parents=[], comments=[], description="", links=[], files=[]):
         self.master = master
 
         self._taskd = copy.deepcopy(TASKD_TEMPLATE)
 
-        self._validate_args(taskd=taskd, task_id=task_id, status=status, title=title, subtasks=subtasks, parents=parents, comments=comments, description=description, resources=resources)
+        self._validate_args(taskd=taskd, task_id=task_id, status=status, title=title, subtasks=subtasks, parents=parents, comments=comments, description=description, links=links, files=files)
 
         if taskd:
             self._id = task_id
@@ -44,7 +44,8 @@ class Task:
         else:
             self._comments = comments
             self._description = description
-            self._resources = resources
+            self._files = files
+            self._links = links
             self._status = status
             self._subtasks = set(subtasks)
             self._parents = set(parents)
@@ -73,7 +74,8 @@ class Task:
         
         self._comments = taskd[TSK_COMMENTS]
         self._description = taskd[TSK_DESCRIPTION]
-        self._resources = taskd[TSK_RESOURCES]
+        self._links = taskd[TSK_LINKS]
+        self._files = taskd[TSK_FILES]
         self._status = taskd[TSK_STATUS]
         self._subtasks = set(taskd[TSK_SUBTASKS])
         self._parents = set(taskd[TSK_PARENTS])
@@ -81,7 +83,7 @@ class Task:
         
         self._taskd = taskd
 
-    def _validate_args(self, taskd, task_id, status, title, subtasks, parents, comments, description, resources):
+    def _validate_args(self, taskd, task_id, status, title, subtasks, parents, comments, description, links, files):
         ''' Validates provided arguments (including data in taskd, if provided). 
         
         Raises:
@@ -99,7 +101,8 @@ class Task:
 
             comments = taskd[TSK_COMMENTS]
             description = taskd[TSK_DESCRIPTION]
-            resources = taskd[TSK_RESOURCES]
+            links = taskd[TSK_LINKS]
+            files = taskd[TSK_FILES]
             status = taskd[TSK_STATUS]
             subtasks = taskd[TSK_SUBTASKS]
             parents = taskd[TSK_PARENTS]
@@ -107,7 +110,8 @@ class Task:
 
         self._validate_comments(comments)
         self._validate_description(description)
-        self._validate_resources(resources)
+        self._validate_links(links)
+        self._validate_files(files)
         self._validate_status(status)
         self._validate_subtasks(subtasks)
         self._validate_parents(parents)
@@ -181,10 +185,14 @@ class Task:
     def _validate_parents(self, parents):
         self._validate_base_list(parents, self._validate_id, 'parents')
 
-    def _validate_resource(self, resource):
-        self._validate_base_object(resource, str, "resource", max_length=MAX_RESOURCE_LEN)
+    # ? Maybe dont use _validate_base_object and just perform a local check here.
+    def _validate_link(self, url):
+        self._validate_base_object(url, , "link", max_length=MAX_RESOURCE_LEN)
+        
+    def _validate_file(self, path):
+        self._validate_base_object(path, , "file", max_length=MAX_RESOURCE_LEN)
 
-    def _validate_resources(self, resources):
+    def _validate_resources(self, resources): # Todo
         self._validate_base_list(resources, self._validate_resource, 'resources', item_type=str)
         self._validate_base_length(resources, MAX_RESOURCES, 'resources')
         
@@ -209,15 +217,22 @@ class Task:
         self._validate_comment(comment)
         self._comments.append(comment)
     
-    def add_resource(self, resource):
-        self._validate_resource(resource)
-        self._resources.append(resource)
+    def add_link(self, url):
+        self._validate_link(url)
+        self._links.append(url)
+
+    def add_file(self, path):
+        self._validate_file(path)
+        self._files.append(path)
 
     def remove_comment(self, index):
         self._comments.pop(index)
     
-    def remove_resource(self, index):
-        self._resources.pop(index)
+    def remove_file(self, index):
+        self._files.pop(index)
+
+    def remove_link(self, index):
+        self._links.pop(index)
 
     def remove_parent(self, parent_id):
         try:
@@ -258,8 +273,11 @@ class Task:
     def get_parents(self):
         return list(self._parents)
 
-    def get_resources(self):
-        return list(self._resources)
+    def get_links(self):
+        return list(self._links)
+
+    def get_files(self):
+        return list(self._files)
 
     def get_status(self):
         return self._status
@@ -290,22 +308,30 @@ class Task:
         self._status = not self._status
 
     def update_comment(self, index, comment):
-        self._validate_resource(comment)
+        self._validate_comment(comment)
 
         try:
-            self._resources[index] = comment
+            self._comments[index] = comment
         except IndexError as e:
             raise type(e)(f"No comment with index: '{index}'") from e
 
-    def update_resource(self, index, resource):
-        self._validate_resource(resource)
+    def update_file(self, index, path):
+        self._validate_file(path)
 
         try:
-            self._resources[index] = resource
+            self._files[index] = path
         except IndexError as e:
-            raise type(e)(f"No resource with index: '{index}'") from e
+            raise type(e)(f"No file at index: '{index}'") from e
 
-    def summarize(self):
+    def update_link(self, index, url):
+        self._validate_link(url)
+
+        try:
+            self._links[index] = url
+        except IndexError as e:
+            raise type(e)(f"No link at index: '{index}'") from e
+
+    def summarize(self): # ! TODO: Replace resources with links, files.
         # todo: reformat as single and multiple based on variable type. 
         # todo: Need to dynamically get section_title.
  
@@ -361,9 +387,10 @@ class Task:
         Example usage: Writing a task to JSON
         '''
 
-        self._taskd[TSK_COMMENTS] = self._comments
+        self._taskd[TSK_COMMENTS] = list(self._comments)
         self._taskd[TSK_DESCRIPTION] = self._description
-        self._taskd[TSK_RESOURCES] = self._resources
+        self._taskd[TSK_FILES] = list(self._files)
+        self._taskd[TSK_LINKS] = list(self._links)
         self._taskd[TSK_STATUS] = self._status
         self._taskd[TSK_SUBTASKS] = list(self._subtasks)
         self._taskd[TSK_PARENTS] = list(self._parents)

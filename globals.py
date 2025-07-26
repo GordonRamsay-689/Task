@@ -52,7 +52,8 @@ FUNCTIONS = {
 # Task
 TSK_COMMENTS = "comments"
 TSK_DESCRIPTION = "description"
-TSK_RESOURCES = "resources"
+TSK_FILES = "files"
+TSK_LINKS = "links"
 TSK_STATUS = "completed"
 TSK_SUBTASKS = "subtasks"
 TSK_TITLE = "title"
@@ -61,7 +62,8 @@ TSK_PARENTS = "parents"
 TASKD_TEMPLATE = {
     TSK_COMMENTS: [], 
     TSK_DESCRIPTION: "", 
-    TSK_RESOURCES: [],
+    TSK_FILES: [],
+    TSK_LINKS: [],
     TSK_STATUS: False, 
     TSK_SUBTASKS: [],
     TSK_PARENTS: [],
