@@ -228,7 +228,7 @@ class Task:
         return "Untitled"
 
     def get_comments(self):
-        return self._comments
+        return list(self._comments)
 
     def get_description(self):
         return self._description
@@ -240,7 +240,7 @@ class Task:
         return list(self._parents)
 
     def get_resources(self):
-        return self._resources
+        return list(self._resources)
 
     def get_status(self):
         return self._status
@@ -269,6 +269,22 @@ class Task:
 
     def toggle_status(self):
         self._status = not self._status
+
+    def update_comment(self, index, comment):
+        self._validate_resource(comment)
+
+        try:
+            self._resources[index] = comment
+        except IndexError as e:
+            raise type(e)(f"No comment with index: '{index}'") from e
+
+    def update_resource(self, index, resource):
+        self._validate_resource(resource)
+
+        try:
+            self._resources[index] = resource
+        except IndexError as e:
+            raise type(e)(f"No resource with index: '{index}'") from e
 
     def summarize(self):
         # todo: reformat as single and multiple based on variable type. 
