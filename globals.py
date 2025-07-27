@@ -46,7 +46,7 @@ GROUP_TEMPLATE = {
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
 
-# ! Extend OrderedSet
+# ! Extend OrderedSet (v 4.1.0)
 
 class OrderedSet(OrderedSet):
     def move(self, value, steps):
