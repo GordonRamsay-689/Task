@@ -2,6 +2,8 @@ import copy, os
 from id_gen import increment_id
 from globals import *
 
+# Todo: add min_length=x to calls to _base_validate_length()
+
 class Task:
     ''' Represents a task. 
     
@@ -122,17 +124,16 @@ class Task:
         self._validate_parents(parents)
         self._validate_title(title)
 
-    def _validate_base_length(self, object, max_length, name):
-        # ? Potential set to list conversion, probably superfluos.
-        if len(object) > max_length:
-            msg = msg = f"Lenght of '{name}' exceeds maximum of {max_length}."
-
+    def _validate_base_length(self, object, max_length, name, min_length=1):
+        obj_len = len(object)
+        
+        if obj_len > max_length:
             if not isinstance(object, str):
-                object = str(object)
-            
-            p1, p2 = msg.split(" exceeds")
-            msg = f"{p1} ({object[:6]}..) exceeds{p2}"
-
+                object = str(object)            
+            msg = f"Lenght of '{name}' ({object[:6]}..) exceeds exceeds maximum of {max_length}."
+            raise ValueError(msg)
+        elif obj_len < min_length:
+            msg = f"Lenght of '{name}' does not satisfy minimum of {min_length}."
             raise ValueError(msg)
 
     def _validate_base_list(self, lst, fn, name, item_type=None):
