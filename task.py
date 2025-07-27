@@ -27,7 +27,7 @@ class Task:
         'get_x'       : Returns a copy of the attribute '_x' in Task (with some exceptions, like 'get_status_symbol()' which doesn't correspond
                         directly to any attribute). Modifying the returned copy does not modify the Task object itself.
         'set_x'       : Sets attribute '_x' to provided data if it passes validation by '_validate_x'.
-        'update_x'    : Replaces (sets) the value of an already existing list entry after provided data if it passes validation by '_validate_x'.
+        'replace_x'   : Replaces (sets) the value of an already existing list entry after provided data if it passes validation by '_validate_x'.
                         Trying to update an index with no associated value will raise IndexError.
         'add_x'       : Adds value to list or set if it passes validation by '_validate_x'.
         'remove_x'    : Removes by value from set or by index from list. 
@@ -124,7 +124,7 @@ class Task:
         self._validate_parents(parents)
         self._validate_title(title)
 
-    def _validate_base_length(self, object, max_length, name, min_length=1):
+    def _validate_base_length(self, object, max_length, min_length, name):
         obj_len = len(object)
         
         if obj_len > max_length:
@@ -141,11 +141,11 @@ class Task:
             TSK_COMMENTS: MAX_COMMENTS,
             TSK_LINKS: MAX_RESOURCES,
             TSK_FILES: MAX_RESOURCES,
-            TSK_SUBTASKS: None,
-            TSK_PARENTS: None
-        }
+            TSK_SUBTASKS: MAX_SUBTASKS,
+            TSK_PARENTS: MAX_PARENTS
+        } # ? Probably redundant, unless only one parent should be allowed.
 
-        self._validate_base_object(lst, list, name, max_length=type_to_max_len[name])
+        self._validate_base_object(lst, list, name, max_length=type_to_max_len[name], min_length=0)
 
         for item in lst:
             try:
@@ -165,12 +165,12 @@ class Task:
 
                 raise ValueError(msg) from e
 
-    def _validate_base_object(self, object, type, name, max_length=None):
+    def _validate_base_object(self, object, type, name, max_length=99999, min_length=0):
         if not isinstance(object, type):
             raise TypeError(f"'{name}' is not of type {type}.")
         
-        if max_length:
-            self._validate_base_length(object, max_length, name)
+        if hasattr(type, '__len__'):
+            self._validate_base_length(object, max_length, min_length, name)
 
     def _validate_comment(self, comment):
         self._validate_base_object(comment, str, "comment", max_length=MAX_COMMENT_LEN)
@@ -191,12 +191,12 @@ class Task:
         self._validate_base_list(parents, self._validate_id, 'parents')
 
     def _validate_link(self, url):
-        self._validate_base_object(url, str, "link", max_length=MAX_RESOURCE_LEN)
+        self._validate_base_object(url, str, "link", max_length=MAX_RESOURCE_LEN, min_length=1)
         
         pass # Check if a valid URL (malformed is OK)
 
     def _validate_file(self, path):
-        self._validate_base_object(path, str, "file", max_length=MAX_RESOURCE_LEN)
+        self._validate_base_object(path, str, "file", max_length=MAX_RESOURCE_LEN, min_length=1)
 
         if not path:
             raise ValueError("Path must contain at least one character.")
@@ -239,27 +239,6 @@ class Task:
     def add_file(self, path):
         self._validate_file(path)
         self._files.append(os.path.abspath(path))
-
-    def remove_comment(self, index):
-        self._comments.pop(index)
-    
-    def remove_file(self, index):
-        self._files.pop(index)
-
-    def remove_link(self, index):
-        self._links.pop(index)
-
-    def remove_parent(self, parent_id):
-        try:
-            self._parents.remove(parent_id)
-        except KeyError:
-            pass
-
-    def remove_subtask(self, subtask_id):
-        try:
-            self._subtasks.remove(subtask_id)
-        except KeyError:
-            pass
 
     def generate_task_id(self):
         ''' Generates a task ID based on information provided by master.
@@ -306,6 +285,51 @@ class Task:
     def get_title(self):
         return self._title
 
+    def remove_comment(self, index):
+        self._comments.pop(index)
+    
+    def remove_file(self, index):
+        self._files.pop(index)
+
+    def remove_link(self, index):
+        self._links.pop(index)
+
+    def remove_parent(self, parent_id):
+        try:
+            self._parents.remove(parent_id)
+        except KeyError:
+            pass
+
+    def remove_subtask(self, subtask_id):
+        try:
+            self._subtasks.remove(subtask_id)
+        except KeyError:
+            pass
+
+    def replace_comment(self, index, comment):
+        self._validate_comment(comment)
+
+        try:
+            self._comments[index] = comment
+        except IndexError as e:
+            raise type(e)(f"No comment with index: '{index}'") from e
+
+    def replace_file(self, index, path):
+        self._validate_file(path)
+
+        try:
+            self._files[index] = path
+        except IndexError as e:
+            raise type(e)(f"No file at index: '{index}'") from e
+
+    def replace_link(self, index, url):
+        self._validate_link(url)
+
+        try:
+            self._links[index] = url
+        except IndexError as e:
+            raise type(e)(f"No link at index: '{index}'") from e
+
     def set_title(self, title):
         self._validate_title(title)
         self._title = title
@@ -321,30 +345,6 @@ class Task:
 
     def toggle_status(self):
         self._status = not self._status
-
-    def update_comment(self, index, comment):
-        self._validate_comment(comment)
-
-        try:
-            self._comments[index] = comment
-        except IndexError as e:
-            raise type(e)(f"No comment with index: '{index}'") from e
-
-    def update_file(self, index, path):
-        self._validate_file(path)
-
-        try:
-            self._files[index] = path
-        except IndexError as e:
-            raise type(e)(f"No file at index: '{index}'") from e
-
-    def update_link(self, index, url):
-        self._validate_link(url)
-
-        try:
-            self._links[index] = url
-        except IndexError as e:
-            raise type(e)(f"No link at index: '{index}'") from e
 
     def summarize(self): # ! TODO: Replace resources with links, files.
         # todo: reformat as single and multiple based on variable type. 
