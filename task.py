@@ -190,11 +190,10 @@ class Task:
     def _validate_parents(self, parents):
         self._validate_base_list(parents, self._validate_id, 'parents')
 
-    # ? Maybe dont use _validate_base_object and just perform a local check here.
     def _validate_link(self, url):
         self._validate_base_object(url, str, "link", max_length=MAX_RESOURCE_LEN)
         
-        pass # Check if a valid URL
+        pass # Check if a valid URL (malformed is OK)
 
     def _validate_file(self, path):
         self._validate_base_object(path, str, "file", max_length=MAX_RESOURCE_LEN)
