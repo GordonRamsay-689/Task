@@ -1,4 +1,4 @@
-import copy
+import copy, os
 from id_gen import increment_id
 from globals import *
 
@@ -44,7 +44,7 @@ class Task:
         else:
             self._comments = comments
             self._description = description
-            self._files = files
+            self._init_files(files)
             self._links = links
             self._status = status
             self._subtasks = set(subtasks)
@@ -68,14 +68,19 @@ class Task:
 
     def _get_pad(self, i, indent, section_title):
         return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
-
+    
+    def _init_files(self, files):
+        self._files = []
+        for path in files:
+            self._files.append(os.path.abspath(path))
+    
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
         
         self._comments = taskd[TSK_COMMENTS]
         self._description = taskd[TSK_DESCRIPTION]
         self._links = taskd[TSK_LINKS]
-        self._files = taskd[TSK_FILES]
+        self._init_files(taskd[TSK_FILES])
         self._status = taskd[TSK_STATUS]
         self._subtasks = set(taskd[TSK_SUBTASKS])
         self._parents = set(taskd[TSK_PARENTS])
@@ -133,7 +138,8 @@ class Task:
     def _validate_base_list(self, lst, fn, name, item_type=None):
         type_to_max_len = {
             TSK_COMMENTS: MAX_COMMENTS,
-            TSK_RESOURCES: MAX_RESOURCES,
+            TSK_LINKS: MAX_RESOURCES,
+            TSK_FILES: MAX_RESOURCES,
             TSK_SUBTASKS: None,
             TSK_PARENTS: None
         }
@@ -171,8 +177,6 @@ class Task:
     def _validate_comments(self, comments):
         self._validate_base_list(comments, self._validate_comment, 'comments', item_type=str)
         
-        self._validate_base_length(comments, MAX_COMMENTS, "comments")
-
     def _validate_description(self, description):
         self._validate_base_object(description, str, "description", max_length=MAX_DESCRIPTION_LEN)
         
@@ -187,14 +191,25 @@ class Task:
 
     # ? Maybe dont use _validate_base_object and just perform a local check here.
     def _validate_link(self, url):
-        self._validate_base_object(url, , "link", max_length=MAX_RESOURCE_LEN)
+        self._validate_base_object(url, str, "link", max_length=MAX_RESOURCE_LEN)
         
-    def _validate_file(self, path):
-        self._validate_base_object(path, , "file", max_length=MAX_RESOURCE_LEN)
+        pass # Check if a valid URL
 
-    def _validate_resources(self, resources): # Todo
-        self._validate_base_list(resources, self._validate_resource, 'resources', item_type=str)
-        self._validate_base_length(resources, MAX_RESOURCES, 'resources')
+    def _validate_file(self, path):
+        self._validate_base_object(path, str, "file", max_length=MAX_RESOURCE_LEN)
+
+        if not path:
+            raise ValueError("Path must contain at least one character.")
+
+        path = os.path.abspath(path)
+        if not os.path.exists(path):
+            raise ValueError(f"Could not locate path: {path}")
+
+    def _validate_files(self, files):
+        self._validate_base_list(files, self._validate_file, 'files', item_type=str)
+
+    def _validate_links(self, links):
+        self._validate_base_list(links, self._validate_link, 'links', item_type=str)
         
     def _validate_status(self, status):
         self._validate_base_object(status, bool, "status")
@@ -223,7 +238,7 @@ class Task:
 
     def add_file(self, path):
         self._validate_file(path)
-        self._files.append(path)
+        self._files.append(os.path.abspath(path))
 
     def remove_comment(self, index):
         self._comments.pop(index)
