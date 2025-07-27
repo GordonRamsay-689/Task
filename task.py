@@ -285,6 +285,22 @@ class Task:
     def get_title(self):
         return self._title
 
+    def move_parent(self, parent_id, steps):
+        try:
+            index = self._parents.move(parent_id, steps)
+        except KeyError as e:
+            raise TaskNotFoundError(task_id=parent_id, msg=f"No parent found with ID: '{parent_id}'") from e
+        
+        return index
+    
+    def move_subtask(self, subtask_id, steps):
+        try:
+            index = self._subtasks.move(subtask_id, steps)
+        except KeyError as e:
+            raise TaskNotFoundError(task_id=subtask_id, msg=f"No subtask found with ID: '{subtask_id}'") from e
+        
+        return index
+    
     def remove_comment(self, index):
         self._comments.pop(index)
     
