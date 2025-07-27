@@ -1,7 +1,13 @@
 import os, json, copy
+from ordered_set import OrderedSet
 from task import Task
 from id_gen import increment_id
 from globals import *
+
+GROUP_TEMPLATE = {
+    "task_ids": OrderedSet(),
+    "title": ""
+    }
 
 class Master:
     ''' Manages I/O operations and Task objects. '''
@@ -176,7 +182,7 @@ class Master:
         '''
 
         self._is_group(group_id)
-        self.data["groups"][group_id]["task_ids"] = set()
+        self.data["groups"][group_id]["task_ids"] = OrderedSet()
         
     def create_group(self, title=None):
         ''' Creates a new group and returns its group ID. 

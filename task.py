@@ -1,4 +1,5 @@
 import copy, os
+from ordered_set import OrderedSet
 from id_gen import increment_id
 from globals import *
 
@@ -49,8 +50,8 @@ class Task:
             self._init_files(files)
             self._links = links
             self._status = status
-            self._subtasks = set(subtasks)
-            self._parents = set(parents)
+            self._subtasks = OrderedSet(subtasks)
+            self._parents = OrderedSet(parents)
             self._title = title or self.generate_task_title()
             self._id = self.generate_task_id() # Last, so errors happen before increment of current_id
 
@@ -63,8 +64,8 @@ class Task:
         status = COMPLETED_SYMBOL if self._status else UNCOMPLETED_SYMBOL
         
         title = self._title
-        if len(title) > MAX_TITLE_LENGTH:
-            title = title[:MAX_TITLE_LENGTH] + '...'
+        if len(title) > MAX_DISPLAY_TITLE_LENGTH:
+            title = title[:MAX_DISPLAY_TITLE_LENGTH] + '...'
 
         return f"|{status}|\t{title} (ID: {self._id})"
 
@@ -84,8 +85,8 @@ class Task:
         self._links = taskd[TSK_LINKS]
         self._init_files(taskd[TSK_FILES])
         self._status = taskd[TSK_STATUS]
-        self._subtasks = set(taskd[TSK_SUBTASKS])
-        self._parents = set(taskd[TSK_PARENTS])
+        self._subtasks = OrderedSet(taskd[TSK_SUBTASKS])
+        self._parents = OrderedSet(taskd[TSK_PARENTS])
         self._title = taskd[TSK_TITLE]
         
         self._taskd = taskd
@@ -295,17 +296,11 @@ class Task:
         self._links.pop(index)
 
     def remove_parent(self, parent_id):
-        try:
-            self._parents.remove(parent_id)
-        except KeyError:
-            pass
+        self._parents.discard(parent_id)
 
     def remove_subtask(self, subtask_id):
-        try:
-            self._subtasks.remove(subtask_id)
-        except KeyError:
-            pass
-
+        self._subtasks.discard(subtask_id)
+    
     def replace_comment(self, index, comment):
         self._validate_comment(comment)
 
