@@ -1,13 +1,7 @@
 import os, json, copy
-from ordered_set import OrderedSet
 from task import Task
 from id_gen import increment_id
 from globals import *
-
-GROUP_TEMPLATE = {
-    "task_ids": OrderedSet(),
-    "title": ""
-    }
 
 class Master:
     ''' Manages I/O operations and Task objects. '''

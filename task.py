@@ -1,5 +1,4 @@
 import copy, os
-from ordered_set import OrderedSet
 from id_gen import increment_id
 from globals import *
 

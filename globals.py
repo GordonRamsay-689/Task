@@ -1,3 +1,5 @@
+from ordered_set import OrderedSet
+
 PROGRAM_NAME = "ctd"
 
 # Configurable variables.
@@ -36,8 +38,33 @@ TASKD_TEMPLATE = {
     TSK_TITLE: ""
 }
 
+GROUP_TEMPLATE = {
+    "task_ids": OrderedSet(),
+    "title": ""
+    }
+
 COMPLETED_SYMBOL = 'x'
 UNCOMPLETED_SYMBOL = '-'
+
+# ! Extend OrderedSet
+
+class OrderedSet(OrderedSet):
+    def move(self, value, steps):
+        ''' Moves a value 'steps' indices. If new index would be out 
+        of range (would produce IndexError) the current index of value
+        is returned instead.'''
+        i = self.index(value)
+
+        if i + steps < 0 or i + steps > len(self) - 1:
+            return i
+        
+        step = -1 if steps < 0 else 1 
+        for j in range(i, i + steps, step):
+            self.items[j], self.items[j + step] = self.items[j + step], self.items[j]
+            self.map[self.items[j]] = j
+            self.map[self.items[j + step]] = j + step
+        
+        return i + steps
 
 # ! Custom Exceptions
 
