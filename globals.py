@@ -1,51 +1,5 @@
 from ordered_set import OrderedSet
 
-PROGRAM_NAME = "ctd"
-
-# Configurable variables.
-MAX_DISPLAY_TITLE_LENGTH = 38
-MAX_RESOURCES_TO_DISPLAY = 2
-
-MAX_COMMENT_LEN = 9999
-MAX_COMMENTS = 9999
-MAX_DESCRIPTION_LEN = 9999
-MAX_RESOURCE_LEN = 9999
-MAX_RESOURCES = 9999
-MAX_PARENTS = 9999
-MAX_SUBTASKS = 9999
-MAX_TITLE_LENGTH = 9999
-
-MAX_GROUP_TITLE_LENGTH = 50
-
-# Task
-TSK_COMMENTS = "comments"
-TSK_DESCRIPTION = "description"
-TSK_FILES = "files"
-TSK_LINKS = "links"
-TSK_STATUS = "completed"
-TSK_SUBTASKS = "subtasks"
-TSK_TITLE = "title"
-TSK_PARENTS = "parents"
-
-TASKD_TEMPLATE = {
-    TSK_COMMENTS: [], 
-    TSK_DESCRIPTION: "", 
-    TSK_FILES: [],
-    TSK_LINKS: [],
-    TSK_STATUS: False, 
-    TSK_SUBTASKS: [],
-    TSK_PARENTS: [],
-    TSK_TITLE: ""
-}
-
-GROUP_TEMPLATE = {
-    "task_ids": OrderedSet(),
-    "title": ""
-    }
-
-COMPLETED_SYMBOL = 'x'
-UNCOMPLETED_SYMBOL = '-'
-
 # ! Extend OrderedSet (v 4.1.0)
 
 class OrderedSet(OrderedSet):
@@ -66,6 +20,54 @@ class OrderedSet(OrderedSet):
             self.map[self.items[j + step]] = j + step
         
         return i + steps
+
+# ! STATIC GLOBALS
+
+COMPLETED_SYMBOL = 'x'
+UNCOMPLETED_SYMBOL = '-'
+
+## Configurable values.
+MAX_DISPLAY_TITLE_LENGTH = 38
+MAX_RESOURCES_TO_DISPLAY = 2
+
+MAX_COMMENT_LEN = 9999
+MAX_COMMENTS = 9999
+MAX_DESCRIPTION_LEN = 9999
+MAX_RESOURCE_LEN = 9999
+MAX_RESOURCES = 9999
+MAX_PARENTS = 9999
+MAX_SUBTASKS = 9999
+MAX_TITLE_LENGTH = 9999
+
+MAX_GROUP_TITLE_LENGTH = 50
+
+## Task Keys
+TSK_COMMENTS = "comments"
+TSK_DESCRIPTION = "description"
+TSK_FILES = "files"
+TSK_LINKS = "links"
+TSK_STATUS = "completed"
+TSK_SUBTASKS = "subtasks"
+TSK_TITLE = "title"
+TSK_PARENTS = "parents"
+
+## Templates
+
+TASKD_TEMPLATE = {
+    TSK_COMMENTS: [], 
+    TSK_DESCRIPTION: "", 
+    TSK_FILES: [],
+    TSK_LINKS: [],
+    TSK_STATUS: False, 
+    TSK_SUBTASKS: [],
+    TSK_PARENTS: [],
+    TSK_TITLE: ""
+}
+
+GROUP_TEMPLATE = {
+    "task_ids": OrderedSet(),
+    "title": ""
+    }
 
 # ! Custom Exceptions
 
