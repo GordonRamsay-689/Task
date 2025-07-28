@@ -79,7 +79,7 @@ class Master:
             TypeError
         '''
         
-        if not (type == set or type == list):
+        if not (type == OrderedSet or type == list):
             raise TypeError(f"Invalid type provided: {type}") 
 
         for group_id in data["groups"].keys():
@@ -411,7 +411,7 @@ class Master:
         if data:
             self.STORAGE_BACKUP = copy.deepcopy(self.data)
 
-            self._groups_task_ids_to(set, data)
+            self._groups_task_ids_to(OrderedSet, data)
             self.data = data
         else:
             self.ui.relay(message=f"No data loaded from storage file at: '{self.STORAGE_PATH}'.")
@@ -463,7 +463,35 @@ class Master:
 
         for parent_id in self.data["tasks"][task_id].get_parents():
             self.load_task(parent_id)
+    
+    def move_task(self, task_id, steps, group_id=None, parent_task_id=None):
+        ''' Moves a task ID 'steps' indices in a group or subtasks list
+        and returns the index of task ID. If index would be out of range 
+        the current index of task ID is returned without attempting to move
+        the task.
+
+        One (and only one) of kwargs group_id or parent_task_id must be provided.
+
+        Raises:
+            GroupNotFoundError
+            TaskNotFoundError
+        '''
         
+        if group_id and parent_task_id:
+            raise TypeError("Expected group_id or parent_task_id, got both.")
+
+        if group_id:
+            if task_id not in self.get_group_tasks(group_id):
+                raise TaskNotFoundError(task_id=task_id, msg=f"Task with ID '{task_id}' not found in group with ID '{group_id}'.")
+            
+            return self.data["groups"][group_id]["task_ids"].move(task_id, steps)
+        elif parent_task_id:
+            parent = self.get_task(parent_task_id)
+
+            return parent.move_subtask(task_id, steps)
+        else:
+            raise TypeError("Expected group_id or parent_task_id, got neither.")
+
     def orphan_task(self, task_id):
         ''' Removes a task from all parents' subtask attribute. 
 
