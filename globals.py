@@ -50,9 +50,10 @@ UNCOMPLETED_SYMBOL = '-'
 
 class OrderedSet(OrderedSet):
     def move(self, value, steps):
-        ''' Moves a value 'steps' indices. If new index would be out 
-        of range (would produce IndexError) the current index of value
-        is returned instead.'''
+        ''' Moves a value 'steps' indices and return the position of 
+        value. If new index would be out of range (would produce 
+        IndexError) the current index of value is returned immediately
+        without attempting to move the item. '''
         i = self.index(value)
 
         if i + steps < 0 or i + steps > len(self) - 1:
