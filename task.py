@@ -242,7 +242,12 @@ class Task:
 
     def generate_task_id(self):
         ''' Generates a task ID based on information provided by master.
-        If Task has no master generate_task_id() returns -1, indicating task IDs are not being tracked.
+        If Task has no master generate_task_id() returns -1 (expects task
+        IDs not being tracked.)
+
+        If a master is not used to track IDs it is important to excplicitly
+        pass unique task IDs for each subtask and parent, or many operations
+        will not be available.
         '''
 
         if not self.master:
@@ -252,7 +257,7 @@ class Task:
         self.master._set_current_task_id(id, validate_id=False)
         return id
 
-    def generate_task_title(self): # Todo
+    def generate_task_title(self):
         return "Untitled"
 
     def get_comments(self):
