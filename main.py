@@ -308,6 +308,26 @@ class Master:
 
         return self.data["tasks"][task_id]
 
+    def get_task_by_title(self, title, ignore_case=True, group_id=None):
+        ''' Returns a list of tasks with matching title. If group_id
+        is passed only tasks that belong to that group will be 
+        returned (recommended).
+
+        If ignore_case is True case is ignored.
+        
+        Raises:
+            DataError
+            GroupNotFoundError
+            TaskNotFoundError
+        '''
+
+        ids = self.get_tasks() if not group_id else self.get_group_tasks(group_id)
+        if ignore_case:
+            title = title.lower()
+
+        return [task_id for task_id in ids if title ==
+                (self.get_task(task_id).get_title().lower() if ignore_case else self.get_task(task_id).get_title())]
+            
     def get_tasks(self):
         ''' Returns a list of all task IDs. '''
         return list(self.data["tasks"].keys())
