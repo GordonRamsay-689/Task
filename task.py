@@ -79,14 +79,14 @@ class Task:
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
         
-        self._comments = taskd[TSK_COMMENTS]
-        self._description = taskd[TSK_DESCRIPTION]
-        self._links = taskd[TSK_LINKS]
-        self._init_files(taskd[TSK_FILES])
-        self._status = taskd[TSK_STATUS]
-        self._subtasks = OrderedSet(taskd[TSK_SUBTASKS])
-        self._parents = OrderedSet(taskd[TSK_PARENTS])
-        self._title = taskd[TSK_TITLE]
+        self._comments = taskd[TASK_COMMENTS]
+        self._description = taskd[TASK_DESCRIPTION]
+        self._links = taskd[TASK_LINKS]
+        self._init_files(taskd[TASK_FILES])
+        self._status = taskd[TASK_STATUS]
+        self._subtasks = OrderedSet(taskd[TASK_SUBTASKS])
+        self._parents = OrderedSet(taskd[TASK_PARENTS])
+        self._title = taskd[TASK_TITLE]
         
         self._taskd = taskd
 
@@ -106,14 +106,14 @@ class Task:
             if taskd.keys() != TASKD_TEMPLATE.keys():
                 raise ValueError(f"Provided 'taskd' does not follow the expected structure of a task dictionary.\nIf this dictionary was loaded this indicates that data may have been corrupted.")
 
-            comments = taskd[TSK_COMMENTS]
-            description = taskd[TSK_DESCRIPTION]
-            links = taskd[TSK_LINKS]
-            files = taskd[TSK_FILES]
-            status = taskd[TSK_STATUS]
-            subtasks = taskd[TSK_SUBTASKS]
-            parents = taskd[TSK_PARENTS]
-            title = taskd[TSK_TITLE]
+            comments = taskd[TASK_COMMENTS]
+            description = taskd[TASK_DESCRIPTION]
+            links = taskd[TASK_LINKS]
+            files = taskd[TASK_FILES]
+            status = taskd[TASK_STATUS]
+            subtasks = taskd[TASK_SUBTASKS]
+            parents = taskd[TASK_PARENTS]
+            title = taskd[TASK_TITLE]
 
         self._validate_comments(comments)
         self._validate_description(description)
@@ -138,11 +138,11 @@ class Task:
 
     def _validate_base_list(self, lst, fn, name, item_type=None):
         type_to_max_len = {
-            TSK_COMMENTS: MAX_COMMENTS,
-            TSK_LINKS: MAX_RESOURCES,
-            TSK_FILES: MAX_RESOURCES,
-            TSK_SUBTASKS: MAX_SUBTASKS,
-            TSK_PARENTS: MAX_PARENTS
+            TASK_COMMENTS: MAX_COMMENTS,
+            TASK_LINKS: MAX_RESOURCES,
+            TASK_FILES: MAX_RESOURCES,
+            TASK_SUBTASKS: MAX_SUBTASKS,
+            TASK_PARENTS: MAX_PARENTS
         } # ? Probably redundant, unless only one parent should be allowed.
 
         self._validate_base_object(lst, list, name, max_length=type_to_max_len[name], min_length=0)
@@ -417,13 +417,13 @@ class Task:
         Example usage: Writing a task to JSON
         '''
 
-        self._taskd[TSK_COMMENTS] = list(self._comments)
-        self._taskd[TSK_DESCRIPTION] = self._description
-        self._taskd[TSK_FILES] = list(self._files)
-        self._taskd[TSK_LINKS] = list(self._links)
-        self._taskd[TSK_STATUS] = self._status
-        self._taskd[TSK_SUBTASKS] = list(self._subtasks)
-        self._taskd[TSK_PARENTS] = list(self._parents)
-        self._taskd[TSK_TITLE] = self._title
+        self._taskd[TASK_COMMENTS] = list(self._comments)
+        self._taskd[TASK_DESCRIPTION] = self._description
+        self._taskd[TASK_FILES] = list(self._files)
+        self._taskd[TASK_LINKS] = list(self._links)
+        self._taskd[TASK_STATUS] = self._status
+        self._taskd[TASK_SUBTASKS] = list(self._subtasks)
+        self._taskd[TASK_PARENTS] = list(self._parents)
+        self._taskd[TASK_TITLE] = self._title
         
         return self._taskd

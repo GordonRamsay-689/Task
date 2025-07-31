@@ -14,7 +14,7 @@ class Master:
         self.data = {}
 
     def _deep_remove_task(self, task_id):
-        ''' Removes task with ID task_id from Master.data["tasks"], then iterates through
+        ''' Removes task with ID task_id from Master.data[DATA_TASKS], then iterates through
         all tasks in the dict and removes task with ID task_id from any parents or subtasks
         lists.
 
@@ -29,7 +29,7 @@ class Master:
         to_remove = set()
         taskd_keys = TASKD_TEMPLATE.keys()
 
-        for _task_id, _task in copy.copy(self.data["tasks"]).items():
+        for _task_id, _task in copy.copy(self.data[DATA_TASKS]).items():
             if task_id == _task_id:
                 pass
             
@@ -46,24 +46,24 @@ class Master:
                     to_remove.add(_task_id)
                     continue
 
-                if task_id in _task[TSK_SUBTASKS]:
-                    _task[TSK_SUBTASKS].remove(task_id)
+                if task_id in _task[TASK_SUBTASKS]:
+                    _task[TASK_SUBTASKS].remove(task_id)
 
-                if task_id in _task[TSK_PARENTS]:
+                if task_id in _task[TASK_PARENTS]:
                     to_remove.add(_task_id)
 
-                    for __task_id in _task[TSK_SUBTASKS]:
+                    for __task_id in _task[TASK_SUBTASKS]:
                         to_remove.add(__task_id)
             else:
                 to_remove.add(_task_id)
                 
         try:
-            self.data["tasks"].pop(task_id) 
+            self.data[DATA_TASKS].pop(task_id) 
         except KeyError: # A nonexistent task, most likely from a subtasks or parents list.
             pass
 
         for _task_id in to_remove:
-            for group_id in self.data["groups"]:
+            for group_id in self.data[DATA_GROUPS]:
                 self.group_remove_task(_task_id, group_id)
             self._deep_remove_task(_task_id)
 
@@ -82,8 +82,8 @@ class Master:
         if not (type == OrderedSet or type == list):
             raise TypeError(f"Invalid type provided: {type}") 
 
-        for group_id in data["groups"].keys():
-            data["groups"][group_id]["task_ids"] = type(data["groups"][group_id]["task_ids"])
+        for group_id in data[DATA_GROUPS].keys():
+            data[DATA_GROUPS][group_id][GROUP_TASKS] = type(data[DATA_GROUPS][group_id][GROUP_TASKS])
 
     def _is_Task(self, task_id):
         ''' Confirms if task ID is a Task object. 
@@ -92,7 +92,7 @@ class Master:
             TaskNotFoundError
         '''
         try:
-            if isinstance(self.data["tasks"][task_id], Task):
+            if isinstance(self.data[DATA_TASKS][task_id], Task):
                 return True
             else:
                 return False
@@ -124,9 +124,9 @@ class Master:
             Task._validate_id(Task, id)
 
         if type == "task":
-            key = "current_task_id"
+            key = DATA_CURRENT_TASK
         elif type == "group":
-            key = "current_group_id"
+            key = DATA_CURRENT_GROUP
 
         self.data[key] = id
         
@@ -176,7 +176,7 @@ class Master:
         '''
 
         self._is_group(group_id)
-        self.data["groups"][group_id]["task_ids"] = OrderedSet()
+        self.data[DATA_GROUPS][group_id][GROUP_TASKS] = OrderedSet()
         
     def create_group(self, title=None):
         ''' Creates a new group and returns its group ID. 
@@ -193,10 +193,10 @@ class Master:
             except (ValueError, TypeError) as e:
                 raise type(e)(f"Unable to create group with ID: '{group_id}' due to invalid title.\nDetails: {e}") from e
             
-            group["title"] = title
+            group[GROUP_TITLE] = title
 
         group_id = increment_id(self.get_current_group_id())
-        self.data["groups"][group_id] = group
+        self.data[DATA_GROUPS][group_id] = group
         self._set_current_group_id(group_id, validate_id=False)
         
         return group_id
@@ -221,8 +221,8 @@ class Master:
             self.remove_task(task_id)        
             raise TaskNotFoundError(task_id=parent_task_id, msg=msg) from e
 
-        self.data["tasks"][task_id].add_parent(parent_task_id)
-        self.data["tasks"][parent_task_id].add_subtask(task_id)
+        self.data[DATA_TASKS][task_id].add_parent(parent_task_id)
+        self.data[DATA_TASKS][parent_task_id].add_subtask(task_id)
 
         return task_id
 
@@ -249,7 +249,7 @@ class Master:
                                     msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.:\nDetails: {e}") from e
 
         task_id = task.get_id()
-        self.data["tasks"][task_id] = task
+        self.data[DATA_TASKS][task_id] = task
 
         if group_id:
             try:
@@ -262,13 +262,13 @@ class Master:
         return task_id
 
     def get_active_group(self):
-        return self.data["active_group"]
+        return self.data[DATA_ACTIVE_GROUP]
     
     def get_current_task_id(self):
-        return self.data["current_task_id"]
+        return self.data[DATA_CURRENT_TASK]
 
     def get_current_group_id(self):
-        return self.data["current_group_id"]
+        return self.data[DATA_CURRENT_GROUP]
 
     def get_group_tasks(self, group_id):
         ''' Returns a list of task IDs in group. 
@@ -279,7 +279,7 @@ class Master:
         
         self._is_group(group_id)
 
-        return list(self.data["groups"][group_id]["task_ids"])
+        return list(self.data[DATA_GROUPS][group_id][GROUP_TASKS])
 
     def get_group_title(self, group_id):
         ''' Returns title of group with ID 'group_id' 
@@ -289,11 +289,11 @@ class Master:
         '''
         self._is_group(group_id)
 
-        return self.data["groups"][group_id]["title"]
+        return self.data[DATA_GROUPS][group_id][GROUP_TITLE]
     
     def get_groups(self):
         ''' Returns a list of group IDs. '''
-        return list(self.data["groups"].keys())
+        return list(self.data[DATA_GROUPS].keys())
     
     def get_task(self, task_id):
         ''' Loads and returns Task object with ID task_id. 
@@ -305,7 +305,7 @@ class Master:
         
         self.load_task(task_id)
 
-        return self.data["tasks"][task_id]
+        return self.data[DATA_TASKS][task_id]
 
     def get_task_by_title(self, title, ignore_case=True, group_id=None):
         ''' Returns a list of tasks with matching title. If group_id
@@ -329,7 +329,7 @@ class Master:
             
     def get_tasks(self):
         ''' Returns a list of all task IDs. '''
-        return list(self.data["tasks"].keys())
+        return list(self.data[DATA_TASKS].keys())
 
     def group_add_task(self, task_id, group_id): 
         ''' Adds an existing task ID to a group. 
@@ -349,7 +349,7 @@ class Master:
 
         self._is_group(group_id)
         
-        self.data["groups"][group_id]["task_ids"].add(task_id)
+        self.data[DATA_GROUPS][group_id][GROUP_TASKS].add(task_id)
 
     def group_remove_task(self, task_id, group_id):
         ''' Removes a task from a group. 
@@ -360,7 +360,7 @@ class Master:
         self._is_group(group_id)
         
         try:
-            self.data["groups"][group_id]["task_ids"].remove(task_id)
+            self.data[DATA_GROUPS][group_id][GROUP_TASKS].remove(task_id)
         except KeyError:  # Task is not in group
             return
 
@@ -373,15 +373,15 @@ class Master:
         '''
 
         group = copy.deepcopy(GROUP_TEMPLATE)
-        group["title"] = "General"
-        group["task_ids"] = list(group["task_ids"])
+        group[GROUP_TITLE] = "General"
+        group[GROUP_TASKS] = list(group[GROUP_TASKS])
 
         storage = {
-            "current_task_id": "0", # IDs are in base 36, hence strings
-            "current_group_id": "0",
-            "active_group": "0",
-            "groups": {"0": group},
-            "tasks": {} 
+            DATA_CURRENT_TASK: "0", # IDs are in base 36, hence strings
+            DATA_CURRENT_GROUP: "0",
+            DATA_ACTIVE_GROUP: "0",
+            DATA_GROUPS: {"0": group},
+            DATA_TASKS: {} 
         }
 
         try:
@@ -468,17 +468,17 @@ class Master:
         try:
             task = Task(self, 
                         task_id=task_id, 
-                        taskd=self.data["tasks"][task_id])
+                        taskd=self.data[DATA_TASKS][task_id])
         except (TypeError, ValueError) as e:
             raise DataError(task_id=increment_id(self.get_current_task_id()), 
                                 msg=f"Data in loaded task dict with ID '{task_id}' was invalid.\nDetails: {e}") from e
 
-        self.data["tasks"][task_id] = task
+        self.data[DATA_TASKS][task_id] = task
         
-        for subtask_id in self.data["tasks"][task_id].get_subtasks():
+        for subtask_id in self.data[DATA_TASKS][task_id].get_subtasks():
             self.load_task(subtask_id)
 
-        for parent_id in self.data["tasks"][task_id].get_parents():
+        for parent_id in self.data[DATA_TASKS][task_id].get_parents():
             self.load_task(parent_id)
     
     def move_task(self, task_id, steps, group_id=None, parent_task_id=None):
@@ -501,7 +501,7 @@ class Master:
             if task_id not in self.get_group_tasks(group_id):
                 raise TaskNotFoundError(task_id=task_id, msg=f"Task with ID '{task_id}' not found in group with ID '{group_id}'.")
             
-            return self.data["groups"][group_id]["task_ids"].move(task_id, steps)
+            return self.data[DATA_GROUPS][group_id][GROUP_TASKS].move(task_id, steps)
         elif parent_task_id:
             parent = self.get_task(parent_task_id)
 
@@ -518,8 +518,8 @@ class Master:
         '''
         self.load_task(task_id)
         
-        for parent_id in self.data["tasks"][task_id].get_parents():
-            self.data["tasks"][parent_id].remove_subtask(task_id)
+        for parent_id in self.data[DATA_TASKS][task_id].get_parents():
+            self.data[DATA_TASKS][parent_id].remove_subtask(task_id)
 
     def remove_task(self, task_id, subtask=False):
         ''' Removes a task from all groups, orphans the task 
@@ -531,7 +531,7 @@ class Master:
         '''
 
         if not subtask:
-            for group_id in self.data["groups"].keys():
+            for group_id in self.data[DATA_GROUPS].keys():
                 self.group_remove_task(task_id, group_id)
 
         try:
@@ -544,13 +544,13 @@ class Master:
 
         self.orphan_task(task_id)
         
-        for subtask_id in self.data["tasks"][task_id].get_subtasks():
+        for subtask_id in self.data[DATA_TASKS][task_id].get_subtasks():
             try:
                 self.remove_task(subtask_id, subtask=True) # Todo: Add check for subtask recursion (original task is a subtask of a subtask down the line)
             except TaskNotFoundError:
                 pass
 
-        self.data["tasks"].pop(task_id)
+        self.data[DATA_TASKS].pop(task_id)
     
     def remove_group(self, group_id):
         ''' Removes group with group ID group_id. Tasks are left without a group unless explicitly moved first. 
@@ -559,7 +559,7 @@ class Master:
             GroupNotFoundError
         '''
         self._is_group(group_id)
-        self.data["groups"].pop(group_id)
+        self.data[DATA_GROUPS].pop(group_id)
         
     def set_active_group(self, group_id):
         ''' Sets the active group, loading all of its tasks. 
@@ -572,7 +572,7 @@ class Master:
         if self.get_active_group() != group_id:
             self.load_group(group_id)
 
-            self.data["active_group"] = group_id
+            self.data[DATA_ACTIVE_GROUP] = group_id
 
     def set_group_title(self, group_id, title):
         ''' Sets group title.
@@ -590,7 +590,7 @@ class Master:
         except (ValueError, TypeError) as e:
             raise type(e)(f" Invalid title for group: '{group_id}'.\nDetails: {e}") from e
         
-        self.data["groups"][group_id]["title"] = title
+        self.data[DATA_GROUPS][group_id][GROUP_TITLE] = title
 
     def write_data(self): 
         ''' Writes self.data to storage file. 
@@ -603,9 +603,9 @@ class Master:
 
         self._groups_task_ids_to(list, data)
 
-        for task_id, task in self.data["tasks"].items():
+        for task_id, task in self.data[DATA_TASKS].items():
             if self._is_Task(task_id): # If Task object, convert to task dict
-                data["tasks"][task_id] = task.write_dict()
+                data[DATA_TASKS][task_id] = task.write_dict()
         
         try:
             with open(self.STORAGE_PATH, mode='w') as f:

@@ -30,6 +30,7 @@ UNCOMPLETED_SYMBOL = '-'
 MAX_DISPLAY_TITLE_LENGTH = 38
 MAX_RESOURCES_TO_DISPLAY = 2
 
+## 9999 is a placeholder value, but also does limit some (ridiculously) erroneous assignments.
 MAX_COMMENT_LEN = 9999
 MAX_COMMENTS = 9999
 MAX_DESCRIPTION_LEN = 9999
@@ -42,26 +43,36 @@ MAX_TITLE_LENGTH = 9999
 MAX_GROUP_TITLE_LENGTH = 50
 
 ## Task Keys
-TSK_COMMENTS = "comments"
-TSK_DESCRIPTION = "description"
-TSK_FILES = "files"
-TSK_LINKS = "links"
-TSK_STATUS = "completed"
-TSK_SUBTASKS = "subtasks"
-TSK_TITLE = "title"
-TSK_PARENTS = "parents"
+TASK_COMMENTS = "comments"
+TASK_DESCRIPTION = "description"
+TASK_FILES = "files"
+TASK_LINKS = "links"
+TASK_STATUS = "completed"
+TASK_SUBTASKS = "subtasks"
+TASK_TITLE = "title"
+TASK_PARENTS = "parents"
+
+## Data Keys
+DATA_ACTIVE_GROUP = "active_group"
+DATA_CURRENT_GROUP = "current_group"
+DATA_CURRENT_TASK = "current_task"
+DATA_GROUPS = "groups"
+DATA_TASKS = "tasks"
+
+GROUP_TASKS = "task_ids"
+GROUP_TITLE = "title"
 
 ## Templates
 
 TASKD_TEMPLATE = {
-    TSK_COMMENTS: [], 
-    TSK_DESCRIPTION: "", 
-    TSK_FILES: [],
-    TSK_LINKS: [],
-    TSK_STATUS: False, 
-    TSK_SUBTASKS: [],
-    TSK_PARENTS: [],
-    TSK_TITLE: ""
+    TASK_COMMENTS: [], 
+    TASK_DESCRIPTION: "", 
+    TASK_FILES: [],
+    TASK_LINKS: [],
+    TASK_STATUS: False, 
+    TASK_SUBTASKS: [],
+    TASK_PARENTS: [],
+    TASK_TITLE: ""
 }
 
 GROUP_TEMPLATE = {
