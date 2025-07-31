@@ -130,26 +130,6 @@ class Master:
 
         self.data[key] = id
         
-    def _set_current_task_id(self, task_id, validate_id=True):
-        ''' Set current task ID to 'id'. 
-        
-        Raises:
-            TypeError
-            ValueError
-        '''        
-        
-        self._set_current_id(task_id, "task", validate_id=validate_id)
-
-    def _set_current_group_id(self, group_id, validate_id=True):
-        ''' Set current group ID to 'id'. 
-        
-        Raises:
-            TypeError
-            ValueError
-        '''
-
-        self._set_current_id(group_id, "group", validate_id=validate_id)
-
     def _validate_group_title(self, title):
         ''' Validates group title.
 
@@ -197,7 +177,7 @@ class Master:
 
         group_id = increment_id(self.get_current_group_id())
         self.data[DATA_GROUPS][group_id] = group
-        self._set_current_group_id(group_id, validate_id=False)
+        self.set_current_group_id(group_id, validate_id=False)
         
         return group_id
 
@@ -573,6 +553,26 @@ class Master:
             self.load_group(group_id)
 
             self.data[DATA_ACTIVE_GROUP] = group_id
+
+    def set_current_group_id(self, group_id, validate_id=True):
+        ''' Set current group ID to 'id'. 
+        
+        Raises:
+            TypeError
+            ValueError
+        '''
+
+        self._set_current_id(group_id, "group", validate_id=validate_id)
+
+    def set_current_task_id(self, task_id, validate_id=True):
+        ''' Set current task ID to 'id'. 
+        
+        Raises:
+            TypeError
+            ValueError
+        '''        
+        
+        self._set_current_id(task_id, "task", validate_id=validate_id)
 
     def set_group_title(self, group_id, title):
         ''' Sets group title.
