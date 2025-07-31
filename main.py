@@ -366,7 +366,7 @@ class Master:
 
         try:
             with open(self.STORAGE_PATH, "w") as f:
-                f.write(json.dumps(storage, ensure_ascii=False))
+                json.dump(storage, f, ensure_ascii=False)
         except FileNotFoundError as e:
             raise FSError(path=self.STORAGE_PATH, msg="A file system error occured during creation of storage file.") from e
         except PermissionError as e:
@@ -609,7 +609,7 @@ class Master:
         
         try:
             with open(self.STORAGE_PATH, mode='w') as f:
-                json.dump(data, f) # ? Is ensure_ascii=True necessary?
+                json.dump(data, f, ensure_ascii=False)
         except FileNotFoundError as e:
             raise FSError(path=self.STORAGE_PATH, msg=f"No file found at: '{self.STORAGE_PATH}'") from e
         except PermissionError as e:
@@ -617,8 +617,7 @@ class Master:
         except Exception as e:
             raise FSError(path=self.STORAGE_PATH, msg=f"An unexpected error occured during attempt to write data to storage file at: '{self.STORAGE_PATH}'") from e
 
-        pass # Todo: check for write success
-        # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)
+        self.STORAGE_BACKUP = copy.deepcopy(data)
         
 if __name__ == '__main__':
     class DevUI:
