@@ -526,7 +526,7 @@ class Master:
         
         for subtask_id in self.data[DATA_TASKS][task_id].get_subtasks():
             try:
-                self.remove_task(subtask_id, subtask=True) # Todo: Add check for subtask recursion (original task is a subtask of a subtask down the line)
+                self.remove_task(subtask_id, subtask=True)
             except TaskNotFoundError:
                 pass
 

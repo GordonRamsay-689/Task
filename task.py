@@ -2,8 +2,6 @@ import copy, os
 from id_gen import increment_id
 from globals import *
 
-# Todo: add min_length=x to calls to _base_validate_length()
-
 class Task:
     ''' Represents a task. 
     
