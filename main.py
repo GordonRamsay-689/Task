@@ -97,7 +97,7 @@ class Master:
             else:
                 return False
         except KeyError as e:
-            raise TaskNotFoundError(task_id=task_id, e=e)
+            raise TaskNotFoundError(task_id=task_id) from e
 
     def _is_group(self, group_id):
         ''' Raises GroupNotFoundError if a group does not exist. '''
@@ -191,7 +191,7 @@ class Master:
             try:
                 self._validate_group_title(title)
             except (ValueError, TypeError) as e:
-                raise type(e)(f"Unable to create group with ID: '{group_id}' due to invalid title.\nDescription: {e}") from e
+                raise type(e)(f"Unable to create group with ID: '{group_id}' due to invalid title.\nDetails: {e}") from e
             
             group["title"] = title
 
@@ -219,7 +219,7 @@ class Master:
         except TaskNotFoundError as e:
             msg = f"Could not make '{task_id}' a subtask of task with ID '{parent_task_id}'.\nAttempting to remove task with ID: '{task_id}'."
             self.remove_task(task_id)        
-            raise TaskNotFoundError(task_id=parent_task_id, msg=msg, e=e) from e
+            raise TaskNotFoundError(task_id=parent_task_id, msg=msg) from e
 
         self.data["tasks"][task_id].add_parent(parent_task_id)
         self.data["tasks"][parent_task_id].add_subtask(task_id)
@@ -246,8 +246,7 @@ class Master:
             task = Task(master=self, **task_kwargs)
         except (TypeError, ValueError) as e:
             raise TaskCreationError(task_id=increment_id(self.get_current_task_id()), 
-                                    e=e,
-                                    msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.:\nDescription: {e}")
+                                    msg=f"Error with argument passed to Task.__init__(): '{task_kwargs}'.:\nDetails: {e}") from e
 
         task_id = task.get_id()
         self.data["tasks"][task_id] = task
@@ -389,17 +388,16 @@ class Master:
             with open(self.STORAGE_PATH, "w") as f:
                 f.write(json.dumps(storage, ensure_ascii=False))
         except FileNotFoundError as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg="A file system error occured during creation of storage file.")
+            raise FSError(path=self.STORAGE_PATH, msg="A file system error occured during creation of storage file.") from e
         except PermissionError as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to create storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
+            raise FSError(path=self.STORAGE_PATH, msg=f"No permission to create storage file. Inspect file permissions for: '{self.STORAGE_PATH}'") from e
 
         with open(self.STORAGE_PATH, "r") as f:
             try:
                 written = json.loads(f.read())
             except json.JSONDecodeError as e:
                 raise DataError(path=self.STORAGE_PATH, 
-                                msg="An error occured while creating storage file.",
-                                e=e)
+                                msg="An error occured while creating storage file.") from e
 
             if written == storage:
                 self.ui.relay(f"Succesfully initialized storage file at '{self.STORAGE_PATH}'.")
@@ -422,11 +420,11 @@ class Master:
         except FileNotFoundError as e:
             self.ui.relay(f"Storage file at '{self.STORAGE_PATH}' not found.")
         except json.JSONDecodeError as e:
-            raise DataError(e=e, path=self.STORAGE_PATH, msg="The data in storage file could not be interpreted.")
+            raise DataError(path=self.STORAGE_PATH, msg="The data in storage file could not be interpreted.") from e
         except PermissionError as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to access storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
+            raise FSError(path=self.STORAGE_PATH, msg=f"No permission to access storage file. Inspect file permissions for: '{self.STORAGE_PATH}'") from e
         except Exception as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg="An unexpected error occurred while loading data.")
+            raise FSError(path=self.STORAGE_PATH, msg="An unexpected error occurred while loading data.") from e
 
         if data:
             self.STORAGE_BACKUP = copy.deepcopy(self.data)
@@ -473,8 +471,7 @@ class Master:
                         taskd=self.data["tasks"][task_id])
         except (TypeError, ValueError) as e:
             raise DataError(task_id=increment_id(self.get_current_task_id()), 
-                                e=e,
-                                msg=f"Data in loaded task dict with ID '{task_id}' was invalid.\nDescription: {e}")
+                                msg=f"Data in loaded task dict with ID '{task_id}' was invalid.\nDetails: {e}") from e
 
         self.data["tasks"][task_id] = task
         
@@ -543,8 +540,7 @@ class Master:
             # Indicates failure to load task (OR its parents/subtasks, which indicates data corruption).
             self._deep_remove_task(task_id)
             raise type(e)(msg=f"An attempt has been made to remove mention of task with ID '{task_id}' from groups, parents and subtasks lists and all of its children (if any).", 
-                          task_id=e.task_id, 
-                          e=e) from e
+                          task_id=e.task_id) from e
 
         self.orphan_task(task_id)
         
@@ -592,7 +588,7 @@ class Master:
         try:
             self._validate_group_title(title)
         except (ValueError, TypeError) as e:
-            raise type(e)(f" Invalid title for group: '{group_id}'.\nDescription: {e}") from e
+            raise type(e)(f" Invalid title for group: '{group_id}'.\nDetails: {e}") from e
         
         self.data["groups"][group_id]["title"] = title
 
@@ -615,11 +611,11 @@ class Master:
             with open(self.STORAGE_PATH, mode='w') as f:
                 json.dump(data, f) # ? Is ensure_ascii=True necessary?
         except FileNotFoundError as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No file found at: '{self.STORAGE_PATH}'")
+            raise FSError(path=self.STORAGE_PATH, msg=f"No file found at: '{self.STORAGE_PATH}'") from e
         except PermissionError as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"No permission to write to storage file. Inspect file permissions for: '{self.STORAGE_PATH}'")
+            raise FSError(path=self.STORAGE_PATH, msg=f"No permission to write to storage file. Inspect file permissions for: '{self.STORAGE_PATH}'") from e
         except Exception as e:
-            raise FSError(e=e, path=self.STORAGE_PATH, msg=f"An unexpected error occured during attempt to write data to storage file at: '{self.STORAGE_PATH}'")
+            raise FSError(path=self.STORAGE_PATH, msg=f"An unexpected error occured during attempt to write data to storage file at: '{self.STORAGE_PATH}'") from e
 
         pass # Todo: check for write success
         # if success, create a new backup with self.STORAGE_BACKUP = copy.deepcopy(data)

@@ -76,7 +76,7 @@ class CustomException(Exception):
         text = f"Error: {desc}"
         
         if msg:
-            text += f"\nInfo: {msg}"
+            text += f"\nDetail: {msg}"
 
         return text
 
@@ -85,27 +85,37 @@ class CustomException(Exception):
 
 class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
     ''' Master.data (or storage file) is corrupted or otherwise unexpected. '''
-    def __init__(self, e=None, msg="", path=None, task_id=None):
-        self.e = e
+    def __init__(self, msg="", path=None, task_id=None):
+        
         self.msg = msg
         self.path = path
         self.task_id = task_id
 
-        self.desc = f"Data is corrupt."
+        part = ''
+        if self.task_id:
+            part += f"in task with ID '{self.task_id}' "
+        if self.path:
+            part += f"at path '{self.path}' "
+
+        self.desc = f"Data {part}is corrupt."
 
 class FSError(CustomException):
     ''' A filesystem error occured. '''
-    def __init__(self, path, e=None, msg="", task_id=None):
-        self.e = e
+    def __init__(self, path, msg="", task_id=None):
+        
         self.msg = msg
         self.task_id = task_id
         self.path = path
 
-        self.desc = f"An error occured while trying to access: '{self.path}'."
+        part = ""
+        if self.task_id:
+            part += f" while handling '{self.task_id}'"
+
+        self.desc = f"An error occured while trying to access '{self.path}'{part}."
 
 class GroupNotFoundError(CustomException):
-    def __init__(self, group_id, e=None, msg="", task_id=None,):
-        self.e = e
+    def __init__(self, group_id, msg="", task_id=None,):
+        
         self.group_id = group_id
         self.msg = msg
         self.task_id = task_id
@@ -114,16 +124,16 @@ class GroupNotFoundError(CustomException):
 
 class TaskCreationError(CustomException):
     ''' An error occured during Task object creation. '''
-    def __init__(self, task_id, e=None, msg=""):
-        self.e = e
+    def __init__(self, task_id,  msg=""):
+        
         self.msg = msg
         self.task_id = task_id
 
         self.desc = f"Failed to create task with ID: '{self.task_id}'"
 
 class TaskNotFoundError(CustomException):
-    def __init__(self, task_id, e=None, msg=""):
-        self.e = e
+    def __init__(self, task_id,  msg=""):
+        
         self.msg = msg
         self.task_id = task_id
         
