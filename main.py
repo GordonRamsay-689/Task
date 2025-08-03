@@ -215,7 +215,7 @@ class Master:
     # TODO: def remove_parent()
 
     def _is_recursive_relationship(self, origin_id, x_id, check, visited=set()):
-        '''Checks for a recursive parent or subtask relationship between two tasks.
+        '''Checks for a would-be recursive parent or subtask relationship between two tasks.
 
         Performs a depth-first search starting from `x_id` to determine if
         `origin_id` is found in the specified direction (parents or subtasks)
