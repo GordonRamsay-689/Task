@@ -214,7 +214,7 @@ class Master:
     # TODO: def remove_subtask()
     # TODO: def remove_parent()
 
-    def _is_recursive_relationship(self, origin_id, x_id, check, visited=set()):
+    def _is_recursive_relationship(self, origin_id, x_id, check, visited=None):
         '''Checks for a would-be recursive parent or subtask relationship between two tasks.
 
         Performs a depth-first search starting from `x_id` to determine if
@@ -239,27 +239,28 @@ class Master:
             DataError
             TaskNotFoundError
         '''
-        
-        if x_id in visited:
-            raise DataError(task_id=x_id, msg=f"Task with ID '{x_id}' (not '{origin_id}') has a recursive relationship with another task.") 
-        
-        visited.add(x_id)
-        
+        if not visited:
+            visited = set()
+                
         if check == "subtasks":
-            task_ids = self.load_task(x_id).get_subtasks()
+            task_ids = self.get_task(x_id).get_subtasks()
         elif check == "parents":
-            task_ids = self.load_task(x_id).get_parents()
+            task_ids = self.get_task(x_id).get_parents()
         else:
             raise ValueError("'check' must be a str with contents of either 'subtasks' or 'parents'.")
 
         if origin_id in task_ids:
             return True
         
+        if x_id in visited:
+            raise DataError(task_id=x_id, msg=f"Task with ID '{x_id}' (not '{origin_id}') has a recursive relationship with another task.") 
+        
+        visited.add(x_id)
         for _x_id in task_ids:
             if self._is_recursive_relationship(origin_id, _x_id, check, visited):
                 return True
-            
         visited.remove(x_id)
+        
         return False
         
     def clear_group(self, group_id):
