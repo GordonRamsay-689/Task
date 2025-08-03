@@ -146,6 +146,112 @@ class Master:
 
         if len(title) >= MAX_GROUP_TITLE_LENGTH:
             raise ValueError(f"Group title '{title[:MAX_GROUP_TITLE_LENGTH]}..' exceeds maximum character length of {MAX_GROUP_TITLE_LENGTH}.")
+
+    def in_group(self, task_id):
+        ''' Returns True if task with ID task_id is in a group, else returns False. '''
+        for group_id in self.get_groups():
+            if task_id in self.get_group_tasks(group_id):
+                return True
+        return False
+        
+    def make_subtask(self, subtask_id, task_id):
+        ''' Make task with ID 'subtask_id' a subtask of task with ID 'task_id'.
+
+        Prefer this over directly manipulating Task object as this function makes sure that 
+        changes are reflected in all other tasks.
+
+        Raises:
+            DataError
+            TaskNotFoundError
+            ValueError
+        '''
+        if self.in_group(subtask_id):
+            raise ValueError(f"Task with ID '{subtask_id}' is in a group. A task cannot be both a subtask and in a group.")
+        
+        if self._is_recursive_relationship(task_id, subtask_id, "subtasks"):
+            raise ValueError(f"A recursive relationship exists between task with ID '{task_id}' and proposed subtask with ID '{subtask_id}'")
+        
+        task = self.load_task(task_id)
+        subtask = self.load_task(subtask_id)
+
+        task.add_subtask(subtask_id)
+        subtask.add_parent(task_id)
+
+    def make_parent(self, parent_id, task_id):
+        ''' Make task with ID 'parent_id' a parent of task with ID 'task_id'.
+
+        Prefer this over directly manipulating Task object as this function makes sure that 
+        changes are reflected in all other tasks.
+
+        Raises:
+            DataError
+            TaskNotFoundError
+            ValueError
+        '''
+        if self.in_group(task_id):
+            raise ValueError(f"Task with ID '{task_id}' is in a group. A task cannot be both a subtask and in a group.")
+        
+        if self._is_recursive_relationship(task_id, parent_id, "parents"):
+            raise ValueError(f"A recursive relationship exists between task with ID '{task_id}' and proposed parent with ID '{parent_id}'")
+        
+        task = self.load_task(task_id)
+        parent = self.load_task(parent_id)
+
+        task.add_parent(parent_id)
+        parent.add_subtask(task_id)    
+
+        return True
+    
+    # TODO: def remove_subtask()
+    # TODO: def remove_parent()
+
+    def _is_recursive_relationship(self, origin_id, x_id, check, visited=set()):
+        '''Checks for a recursive parent or subtask relationship between two tasks.
+
+        Performs a depth-first search starting from `x_id` to determine if
+        `origin_id` is found in the specified direction (parents or subtasks)
+        at any level of recursion.
+        
+        Args:
+            origin_id (str): The ID of the task to search for.
+            x_id (str): The ID of the task from which to start the recursive search.
+            check (str): The direction of the search.
+                         Must be "parents" to check upwards through parent tasks.
+                         Must be "subtasks" to check downwards through subtasks.
+            visited (set, optional): Internal parameter used for tracking visited
+                                     task IDs during recursion to prevent infinite
+                                     loops and detect cycles. Do not pass this directly.
+
+        Returns:
+            bool: True if origin_id is found as a recursive parent/subtask,
+                  False otherwise.
+
+        Raises:
+            DataError
+            TaskNotFoundError
+        '''
+        
+        if x_id in visited:
+            raise DataError(task_id=x_id, msg=f"Task with ID '{x_id}' (not '{origin_id}') has a recursive relationship with another task.") 
+        
+        visited.add(x_id)
+        
+        if check == "subtasks":
+            task_ids = self.load_task(x_id).get_subtasks()
+        elif check == "parents":
+            task_ids = self.load_task(x_id).get_parents()
+        else:
+            raise ValueError("'check' must be a str with contents of either 'subtasks' or 'parents'.")
+
+        if origin_id in task_ids:
+            return True
+        
+        for _x_id in task_ids:
+            if self._is_recursive_relationship(origin_id, _x_id, check, visited):
+                return True
+            
+        visited.remove(x_id)
+        return False
         
     def clear_group(self, group_id):
         ''' Clears all task IDs from group. Does not remove the tasks 
