@@ -95,7 +95,7 @@ class CustomException(Exception):
         return self._construct_error_str(self.desc, self.msg)
 
 class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKUP 
-    ''' Master.data (or storage file) is corrupted or otherwise unexpected. '''
+    ''' Master.data (or storage file) or specific Task data is corrupted or otherwise unexpected. '''
     def __init__(self, msg="", path=None, task_id=None):
         
         self.msg = msg
@@ -108,7 +108,7 @@ class DataError(CustomException): # ? On DataError, restore master.STORAGE_BACKU
         if self.path:
             part += f"at path '{self.path}' "
 
-        self.desc = f"Data {part}is corrupt."
+        self.desc = f"Data {part}is corrupt or unexpected."
 
 class FSError(CustomException):
     ''' A filesystem error occured. '''
