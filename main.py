@@ -12,6 +12,15 @@ class Master:
         self.STORAGE_PATH = os.path.join(self.SCRIPT_DIR, "storage.json")
 
         self.data = {}
+    
+    def _convert_to_dict(self, task_id):
+        ''' Converts a Task object to a task dictionary.
+
+        Raises:
+            TaskNotFoundError
+        '''
+        task_dict = self.get_task(task_id).write_dict()
+        self.data[DATA_TASKS][task_id] = task_dict
 
     def _deep_remove_task(self, task_id):
         ''' Removes task with ID task_id from Master.data[DATA_TASKS], then iterates through
