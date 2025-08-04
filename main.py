@@ -223,6 +223,9 @@ class Master:
         self.get_task(parent_id).remove_subtask(subtask_id)
         self.get_task(subtask_id).remove_parent(parent_id)
 
+    remove_parent = remove_direct_relationship
+    remove_subtask = remove_direct_relationship 
+    
     def _is_recursive_relationship(self, origin_id, x_id, check, visited=None):
         '''Checks for a would-be recursive parent or subtask relationship between two tasks.
 
