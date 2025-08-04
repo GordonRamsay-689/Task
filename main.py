@@ -211,8 +211,17 @@ class Master:
 
         return True
     
-    # TODO: def remove_subtask()
-    # TODO: def remove_parent()
+    def remove_direct_relationship(self, parent_id, subtask_id):
+        ''' Removes a subtask from it's parents' subtasks list and 
+        removes the parent from the subtasks' parents list.
+        
+        Raises:
+            DataError
+            TaskNotFoundError
+        '''
+        
+        self.get_task(parent_id).remove_subtask(subtask_id)
+        self.get_task(subtask_id).remove_parent(parent_id)
 
     def _is_recursive_relationship(self, origin_id, x_id, check, visited=None):
         '''Checks for a would-be recursive parent or subtask relationship between two tasks.
