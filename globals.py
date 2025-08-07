@@ -29,6 +29,9 @@ UNCOMPLETED_SYMBOL = '-'
 ## Configurable values.
 MAX_DISPLAY_TITLE_LENGTH = 38
 MAX_RESOURCES_TO_DISPLAY = 2
+MAX_SUBTASKS_TO_DISPLAY = 4
+MAX_PARENTS_TO_DISPLAY = 4
+MAX_COMMENTS_TO_DISPLAY = 4
 
 ## 9999 is a placeholder value, but also does limit some (ridiculously) erroneous assignments.
 MAX_COMMENT_LEN = 9999
