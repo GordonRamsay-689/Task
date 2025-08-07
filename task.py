@@ -45,7 +45,7 @@ class Task:
             self._comments = comments
             self._description = description
             self._init_files(files)
-            self._links = links
+            self._links = OrderedSet(links)
             self._status = status
             self._subtasks = OrderedSet(subtasks)
             self._parents = OrderedSet(parents)
@@ -64,22 +64,21 @@ class Task:
         if len(title) > MAX_DISPLAY_TITLE_LENGTH:
             title = title[:MAX_DISPLAY_TITLE_LENGTH] + '...'
 
-        return f"|{status}|\t{title} (ID: {self._id})"
-
-    def _get_pad(self, i, indent, section_title):
-        return (indent - 2 - len(f"{section_title[i]}")) # -2 represent': '
+        header = f"|{status}| {self._id}: {title}"
+        
+        return header
     
     def _init_files(self, files):
-        self._files = []
+        self._files = OrderedSet()
         for path in files:
-            self._files.append(os.path.abspath(path))
+            self._files.add(os.path.abspath(path))
     
     def _load_dict(self, taskd):
         ''' Loads an existing dictionary into Task. '''
         
         self._comments = taskd[TASK_COMMENTS]
         self._description = taskd[TASK_DESCRIPTION]
-        self._links = taskd[TASK_LINKS]
+        self._links = OrderedSet(taskd[TASK_LINKS])
         self._init_files(taskd[TASK_FILES])
         self._status = taskd[TASK_STATUS]
         self._subtasks = OrderedSet(taskd[TASK_SUBTASKS])
@@ -236,7 +235,7 @@ class Task:
 
     def add_file(self, path):
         self._validate_file(path)
-        self._files.append(os.path.abspath(path))
+        self._files.add(os.path.abspath(path))
 
     def generate_task_id(self):
         ''' Generates a task ID based on information provided by master.
@@ -307,11 +306,11 @@ class Task:
     def remove_comment(self, index):
         self._comments.pop(index)
     
-    def remove_file(self, index):
-        self._files.pop(index)
+    def remove_file(self, path): 
+        self._files.discard(path)
 
-    def remove_link(self, index):
-        self._links.pop(index)
+    def remove_link(self, url):
+        self._links.discard(url)
 
     def remove_parent(self, parent_id):
         self._parents.discard(parent_id)
@@ -359,56 +358,92 @@ class Task:
     def toggle_status(self):
         self._status = not self._status
 
-    def summarize(self): # ! TODO: Replace resources with links, files.
-        # todo: reformat as single and multiple based on variable type. 
-        # todo: Need to dynamically get section_title.
- 
-        t = self._get_header_str() + '\n'
-
-        section_title = [
-            "Comments" if self._comments else "", 
-            "Description" if self._description else "", 
-            "Resources" if self._resources else "",
-            "Subtasks" if self._subtasks else ""
-        ]
+    def summarize(self):        
+        title_to_max_display_n = {
+                "comments": MAX_COMMENTS_TO_DISPLAY,
+                "links": MAX_RESOURCES_TO_DISPLAY,
+                "files": MAX_RESOURCES_TO_DISPLAY,
+                "subtasks": MAX_SUBTASKS_TO_DISPLAY,
+                "parents": MAX_PARENTS_TO_DISPLAY
+            }
         
-        if any(title for title in section_title): 
-            separator = '_' * 18
-            t += f"\t{separator}\n"
 
-            indentation = max(len(title) for title in section_title) + 2  # + 2 represent ': '
+        def summarize_x(text, title, f):
+
+            pad = _get_pad(indent, title)
+            if sections[title]:
+                text += f"{title.capitalize()}: {" " * pad}"
             
-            # Subtasks
-            if section_title[3]:
-                t += f"\t{section_title[3]}: {' ' * pad}{len(self._subtasks)}\n"
+            start_len = len(text)
+            
+            text = f(text, title)
 
-            # Comments
-            if section_title[0]:
-                pad = self._get_pad(0, indentation, section_title)
-                t += f"\t{section_title[0]}: {' ' * pad}{self._comments}\n"
+            if len(text) > start_len:
+                text += '\n'
 
-            # Resources
-            if section_title[2]:
-                n = len(self._resources)
-                pad = self._get_pad(2, indentation, section_title)
+            return text
+        
+        def _get_pad(indent, section_title):
+            return (indent - 2 - len(section_title)) # -2 represent': '
+        
+        def _summarize_list(text, title):
+            max_str_len = 50
 
-                for i in range(0, MAX_RESOURCES_TO_DISPLAY):
-                    if i >= n:
+            lst = sections[title]
+            max_to_display = title_to_max_display_n[title]
+            
+            for i, el in enumerate(lst):
+                if i != 0:
+                    text += "\n"
+                    text += " " * indent
+                    
+                    if i >= max_to_display:
+                        remaining = len(lst) - i
+
+                        if remaining > 1:
+                            text += f"{remaining} more..."
+                        else:
+                            text += el if len(el) <= max_str_len else el[:max_str_len] + " (...) "
+
                         break
+            
+                text += el if len(el) <= max_str_len else el[:max_str_len] + " (...) "
 
-                    t += '\t'
-                    if i == 0:
-                        t += f"{section_title[2]}: {' ' * pad}"
-                    else:
-                        t += f"{' ' * indentation}"
+            return text
 
-                    t += f"{self._resources[i]}\n"
+        def _summarize_str(text, title):
+            max_str_len = 120
 
-                if n > MAX_RESOURCES_TO_DISPLAY:
-                    t += f"\t{' ' * indentation}{n - MAX_RESOURCES_TO_DISPLAY} more resources.\n"
+            el = sections[title]
+            text += el if len(el) <= max_str_len else el[:max_str_len] + " (...) "
+        
+            return text
+        
+        ''' Summarize contents of self in a presentable str. For use with CLI based frontends. '''
+        text = self._get_header_str()
 
-        return t
+        sections = {
+            "description": self.get_description(),
+            "comments": self.get_comments(),
+            "links": self.get_links(),
+            "files": self.get_files(),
+            "subtasks": self.get_subtasks(),
+            "parents": self.get_parents()
+        }
 
+        if any(title for title in sections):
+            separator = '_' * 18
+            text += f"\n{separator}\n"
+
+            indent = max(len(title) for title in sections.keys() if sections[title]) + 2  # + 2 represents ': '
+            
+            text = summarize_x(text, "description", _summarize_str)
+
+            for title in ["parents", "subtasks", "comments", "files", "links"]:
+                text = summarize_x(text, title, _summarize_list)
+                
+        return text
+    
     def write_dict(self):
         ''' Updates the self._taskd dictionary and returns it.
 
