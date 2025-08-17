@@ -1,0 +1,3 @@
+Create tasks using the Task object, manage them using the Master object (or any similarly capable manager of your choice. See what functions and attributes must be defined by quickly searching for instances of "self.master" in the Task object).
+
+it is possible to use the Task object without a manager but be aware that unique Task IDs are required for specific operations such as managing subtasks or parent tasks. You must yourself make sure that no duplicate IDs exist.
