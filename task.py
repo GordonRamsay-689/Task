@@ -303,7 +303,7 @@ class Task:
         
         return index
     
-    def remove_comment(self, index):
+    def gh_comment(self, index):
         self._comments.pop(index)
     
     def remove_file(self, path): 
@@ -342,14 +342,27 @@ class Task:
         except IndexError as e:
             raise type(e)(f"No link at index: '{index}'") from e
 
-    def set_title(self, title):
-        self._validate_title(title)
-        self._title = title
-
     def set_description(self, description):
         self._validate_description(description)
         self._description = description
+
+    def set_id(self, id):
+        ''' Set Task ID. set_id() is disabled if a master 
+        has been specified as the master is expected to handle
+        ID management. 
         
+        Raises:
+            TypeError
+            ValueError
+        '''
+
+        if not self.master:
+            self._validate_id(id)
+
+            self._id = id
+        
+        return self._id
+
     def set_status(self, status):
         self._validate_status(status)
 
@@ -357,6 +370,10 @@ class Task:
 
     def toggle_status(self):
         self._status = not self._status
+
+    def set_title(self, title):
+        self._validate_title(title)
+        self._title = title
 
     def summarize(self):        
         title_to_max_display_n = {
